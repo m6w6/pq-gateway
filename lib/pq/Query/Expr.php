@@ -8,6 +8,11 @@ class Expr
 	 * @var string
 	 */
 	protected $expression;
+	
+	/**
+	 * @var \pq\Query\Expr
+	 */
+	protected $next;
 
 	/**
 	 * @param string $e the expression or a format string followed by arguments
@@ -15,10 +20,9 @@ class Expr
 	 */
 	function __construct($e) {
 		if (func_num_args() > 1) {
-			$this->expression = call_user_func_array("sprintf", func_get_args());
-		} else {
-			$this->expression = $e;
+			$e = call_user_func_array("sprintf", func_get_args());
 		}
+		$this->expression = trim($e);
 	}
 
 	/**
@@ -26,6 +30,29 @@ class Expr
 	 * @return string
 	 */
 	function __toString() {
-		return (string) $this->expression;
+		return (string) $this->expression . $this->next;
+	}
+	
+	/**
+	 * Check for NULL
+	 * @return bool
+	 */
+	function isNull() {
+		return !strcasecmp($this->expression, "null");
+	}
+	
+	/**
+	 * Append an expresssion
+	 * @param \pq\Query\Expr $next
+	 * @return \pq\Query\Expr $this
+	 * @throws \UnexpectedValueException if any expr is NULL
+	 */
+	function add(Expr $next) {
+		if ($this->isNull() || $next->isNull()) {
+			throw new \UnexpectedValueException("Cannot add anything to NULL");
+		}
+		for ($that = $this; $that->next; $that = $that->next);
+		$that->next = $next;
+		return $this;
 	}
 }

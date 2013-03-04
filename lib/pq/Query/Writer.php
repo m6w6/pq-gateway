@@ -28,9 +28,9 @@ class Writer
 	 * @param array $types the types of the params
 	 */
 	function __construct($query = "", array $params = array(), array $types = array()) {
-		$this->query = $query;
+		$this->query  = $query;
 		$this->params = $params;
-		$this->types = $types;
+		$this->types  = $types;
 	}
 
 	/**
@@ -39,6 +39,16 @@ class Writer
 	 */
 	function __toString() {
 		return $this->query;
+	}
+	
+	/**
+	 * Reduce arguments to write()
+	 * @param string $q
+	 * @param mixed $v
+	 * @return string
+	 */
+	protected function reduce($q, $v) {
+		return $q . " " . (is_array($v) ? implode(", ", $v) : $v);
 	}
 
 	/**
@@ -62,9 +72,9 @@ class Writer
 	 * @return \pq\Query\Writer
 	 */
 	function reset() {
-		$this->query = "";
+		$this->query  = "";
 		$this->params = array();
-		$this->types = array();
+		$this->types  = array();
 		return $this;
 	}
 
@@ -73,9 +83,7 @@ class Writer
 	 * @return \pq\Query\Writer
 	 */
 	function write() {
-		$this->query .= array_reduce(func_get_args(), function($q, $v) {
-			return $q . " " . (is_array($v) ? implode(", ", $v) : $v);
-		});
+		$this->query .= array_reduce(func_get_args(), array($this, "reduce"));
 		return $this;
 	}
 
@@ -89,9 +97,38 @@ class Writer
 		if ($param instanceof Expr) {
 			return (string) $param;
 		}
+		
 		$this->params[] = $param;
-		$this->types[] = $type;
+		$this->types[]  = $type;
+		
 		return "\$".count($this->params);
+	}
+	
+	/**
+	 * Write nested AND/OR criteria
+	 * @param array $criteria
+	 * @return \pq\Query\Writer
+	 */
+	function criteria(array $criteria) {
+		if ((list($left, $right) = each($criteria))) {
+			array_shift($criteria);
+			$this->write("(");
+			if (is_array($right)) {
+				$this->criteria($right);
+			} else {
+				$this->write("(", $left, $this->param($right), ")");
+			}
+			foreach ($criteria as $left => $right) {
+				$this->write(is_int($left) && is_array($right) ? "OR" : "AND");
+				if (is_array($right)) {
+					$this->criteria($right);
+				} else {
+					$this->write("(", $left, $this->param($right), ")");
+				}
+			}
+			$this->write(")");
+		}
+		return $this;
 	}
 
 	/**
@@ -100,6 +137,8 @@ class Writer
 	 * @return \pq\Result
 	 */
 	function exec(\pq\Connection $c) {
+		fprintf(STDERR, "Q: %s\n", $this);
+		fprintf(STDERR, "P: %s\n", implode(", ", $this->params));
 		return $c->execParams($this, $this->params, $this->types);
 	}
 }
