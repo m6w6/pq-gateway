@@ -94,10 +94,11 @@ class Writer
 	 * @return string
 	 */
 	function param($param, $type = null) {
+		if ($param instanceof \pq\Gateway\Cell) {
+			$param = $param->get();
+		}
 		if ($param instanceof Expr) {
 			return (string) $param;
-		} else {
-			var_dump($param);
 		}
 		
 		$this->params[] = $param;
@@ -113,14 +114,13 @@ class Writer
 	 */
 	function criteria(array $criteria) {
 		if ((list($left, $right) = each($criteria))) {
-			array_shift($criteria);
 			$this->write("(");
 			if (is_array($right)) {
 				$this->criteria($right);
 			} else {
 				$this->write("(", $left, $this->param($right), ")");
 			}
-			foreach ($criteria as $left => $right) {
+			while ((list($left, $right) = each($criteria))) {
 				$this->write(is_int($left) && is_array($right) ? "OR" : "AND");
 				if (is_array($right)) {
 					$this->criteria($right);
@@ -139,8 +139,6 @@ class Writer
 	 * @return \pq\Result
 	 */
 	function exec(\pq\Connection $c) {
-		fprintf(STDERR, "Q: %s\n", $this);
-		fprintf(STDERR, "P: %s\n", implode(", ", $this->params));
 		return $c->execParams($this, $this->params, $this->types);
 	}
 }

@@ -9,6 +9,11 @@ class Table
 	/**
 	 * @var \pq\Connection
 	 */
+	public static $defaultConnection;
+	
+	/**
+	 * @var \pq\Connection
+	 */
 	protected $conn;
 
 	/**
@@ -19,16 +24,25 @@ class Table
 	/**
 	 * @var string
 	 */
-	protected $rowset;
+	protected $rowset = "\\pq\\Gateway\\Rowset";
 
 	/**
-	 * @param \pq\Connection $conn
 	 * @param string $name
+	 * @param \pq\Connection $conn
 	 */
-	function __construct(\pq\Connection $conn, $name, $rowset = "\\pq\\Gateway\\Rowset") {
-		$this->conn   = $conn;
-		$this->name   = $name;
+	function __construct($name, \pq\Connection $conn = null) {
+		$this->name = $name;
+		$this->conn = $conn ?: static::$defaultConnection ?: new \pq\Connection;
+	}
+	
+	/**
+	 * Set the rowset prototype
+	 * @param mixed $rowset
+	 * @return \pq\Gateway\Table
+	 */
+	function setRowsetPrototype($rowset) {
 		$this->rowset = $rowset;
+		return $this;
 	}
 	
 	/**
@@ -98,14 +112,21 @@ class Table
 	 * @param string $returning
 	 * @return \pq\Result
 	 */
-	function create(array $data, $returning = "*") {
-		$params = array();
-		$query = new QueryWriter("INSERT INTO ".$this->conn->quoteName($this->name)." (");
-		foreach ($data as $key => $val) {
-			$query->write($key);
-			$params[] = $query->param($val);
+	function create(array $data = null, $returning = "*") {
+		$query = new QueryWriter("INSERT INTO ".$this->conn->quoteName($this->name));
+		if ($data) {
+			$first = true;
+			$params = array();
+			foreach ($data as $key => $val) {
+				$query->write($first ? "(" : ",", $key);
+				$params[] = $query->param($val);
+				$first and $first = false;
+			}
+			$query->write(") VALUES (", $params, ")");
+		} else {
+			$query->write("DEFAULT VALUES");
 		}
-		$query->write(") VALUES (", $params, ")");
+		
 		if (strlen($returning)) {
 			$query->write("RETURNING", $returning);
 		}
@@ -120,9 +141,12 @@ class Table
 	 * @retunr \pq\Result
 	 */
 	function update(array $where, array $data, $returning = "*") {
-		$query = new QueryWriter("UPDATE ".$this->conn->quoteName($this->name)." SET");
+		$query = new QueryWriter("UPDATE ".$this->conn->quoteName($this->name));
+		$first = true;
+		$params = array();
 		foreach ($data as $key => $val) {
-			$query->write($key, "=", $query->param($val));
+			$query->write($first ? "SET" : ",", $key, "=", $query->param($val));
+			$first and $first = false;
 		}
 		$query->write("WHERE")->criteria($where);
 		if (strlen($returning)) {

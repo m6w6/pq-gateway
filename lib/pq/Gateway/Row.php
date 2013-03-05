@@ -17,7 +17,7 @@ class Row implements \JsonSerializable
 	/**
 	 * @var array
 	 */
-	protected $mods = array();
+	protected $cell = array();
 	
 	/**
 	 * @param \pq\Gateway\Table $table
@@ -67,34 +67,52 @@ class Row implements \JsonSerializable
 	}
 	
 	/**
+	 * Check whether the row contains modifications
+	 * @return boolean
+	 */
+	function isDirty() {
+		foreach ($this->cell as $cell) {
+			if ($cell->isDirty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * Fill modified cells
 	 * @return \pq\Gateway\Row
 	 */
 	protected function prime() {
-		$this->mods = array();
+		$this->cell = array();
 		foreach ($this->data as $key => $val) {
-			$this->mods[$key] = new Cell($this, $key, $val);
+			$this->cell[$key] = new Cell($this, $key, $val, true);
 		}
 		return $this;
 	}
 	
 	/**
 	 * Transform data array to where criteria
-	 * @param array $data
 	 * @return array
 	 */
 	protected function criteria() {
 		$where = array();
-		array_walk($this->data, function($v, $k) use (&$where) {
+		foreach($this->data as $k => $v) {
 			$where["$k="] = $v;
-		});
+		}
 		return $where;
 	}
 	
+	/**
+	 * Get an array of changed properties
+	 * @return array
+	 */
 	protected function changes() {
 		$changes = array();
-		foreach ($this->mods as $name => $cell) {
-			$changes[$name] = $cell->get();
+		foreach ($this->cell as $name => $cell) {
+			if ($cell->isDirty()) {
+				$changes[$name] = $cell->get();
+			}
 		}
 		return $changes;
 	}
@@ -105,10 +123,10 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Cell
 	 */
 	function __get($p) {
-		if (!isset($this->mods[$p])) {
-			$this->mods[$p] = new Cell($this, $p, $this->data[$p]);
+		if (!isset($this->cell[$p])) {
+			$this->cell[$p] = new Cell($this, $p, $this->data[$p]);
 		}
-		return $this->mods[$p];
+		return $this->cell[$p];
 	}
 	
 	/**
@@ -126,7 +144,7 @@ class Row implements \JsonSerializable
 	 */
 	function create() {
 		$this->data = $this->table->create($this->changes())->current()->data;
-		$this->mods = array();
+		$this->cell = array();
 		return $this;
 	}
 	
@@ -136,7 +154,7 @@ class Row implements \JsonSerializable
 	 */
 	function update() {
 		$this->data = $this->table->update($this->criteria(), $this->changes())->current()->data;
-		$this->mods = array();
+		$this->cell = array();
 		return $this;
 	}
 	

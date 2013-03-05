@@ -20,18 +20,16 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	protected $rows;
 	
 	/**
-	 * @var string
+	 * @var mixed
 	 */
-	protected $row;
+	protected $row = "\\pq\\Gateway\\Row";
 	
 	/**
 	 * @param \pq\Gateway\Table $table
 	 * @param \pq\Result $result
 	 */
-	function __construct(Table $table, \pq\Result $result, $row = "\\pq\\Gateway\\Row") {
+	function __construct(Table $table, \pq\Result $result = null) {
 		$this->table = $table;
-		$this->row   = $row;
-		
 		$this->hydrate($result);
 	}
 	
@@ -51,20 +49,36 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	 * @param \pq\Result $result
 	 * @return array
 	 */
-	protected function hydrate(\pq\Result $result) {
+	protected function hydrate(\pq\Result $result = null) {
 		$this->index = 0;
 		$this->rows  = array();
-		$row = $this->row;
 		
-		if (is_callable($row)) {
-			while (($data = $result->fetchRow(\pq\Result::FETCH_ASSOC))) {
-				$this->rows[] = $row($data);
-			}
-		} else {
-			while (($data = $result->fetchRow(\pq\Result::FETCH_ASSOC))) {
-				$this->rows[] = new $row($this->table, $data);
+		if ($result) {
+			$row = $this->row;
+
+			if (is_callable($row)) {
+				while (($data = $result->fetchRow(\pq\Result::FETCH_ASSOC))) {
+					$this->rows[] = $row($data);
+				}
+			} elseif ($row) {
+				while (($data = $result->fetchRow(\pq\Result::FETCH_ASSOC))) {
+					$this->rows[] = new $row($this->table, $data);
+				}
+			} else {
+				$this->rows = $result->fetchAll(\pq\Result::FETCH_OBJECT);
 			}
 		}
+		
+		return $this;
+	}
+	
+	/**
+	 * Set the row prototype
+	 * @param mixed $row
+	 * @return \pq\Gateway\Table
+	 */
+	function setRowPrototype($row) {
+		$this->row = $row;
 		return $this;
 	}
 	
