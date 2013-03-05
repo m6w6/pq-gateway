@@ -79,6 +79,12 @@ class Row implements \JsonSerializable
 		return false;
 	}
 	
+	function refresh() {
+		$this->data = $this->table->find($this->criteria(), null, 1, 0)->current()->data;
+		$this->cell = array();
+		return $this;
+	}
+	
 	/**
 	 * Fill modified cells
 	 * @return \pq\Gateway\Row

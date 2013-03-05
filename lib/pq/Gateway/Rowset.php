@@ -89,24 +89,75 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 		return $this->table;
 	}
 	
-	function create() {
-		array_map(function ($row) {
-			$row->create();
-		}, $this->rows);
+	/**
+	 * Create all rows of this rowset
+	 * @param bool $txn
+	 * @return \pq\Gateway\Rowset
+	 * @throws Exception
+	 */
+	function create($txn = true) {
+		$txn = $txn ? $this->table->getConnection()->startTransaction() : false;
+		try {
+			foreach ($this->rows as $row) {
+				$row->create();
+			}
+		} catch (\Exception $e) {
+			if ($txn) {
+				$txn->rollback();
+			}
+			throw $e;
+		}
+		if ($txn) {
+			$txn->commit();
+		}
 		return $this;
 	}
 	
-	function update() {
-		array_map(function ($row) {
-			$row->update();
-		}, $this->rows);
+	/**
+	 * Update all rows of this rowset
+	 * @param bool $txn
+	 * @return \pq\Gateway\Rowset
+	 * @throws \Exception
+	 */
+	function update($txn = true) {
+		$txn = $txn ? $this->table->getConnection()->startTransaction() : false;
+		try {
+			foreach ($this->rows as $row) {
+				$row->update();
+			}
+		} catch (\Exception $e) {
+			if ($txn) {
+				$txn->rollback();
+			}
+			throw $e;
+		}
+		if ($txn) {
+			$txn->commit();
+		}
 		return $this;
 	}
 	
-	function delete() {
-		array_map(function ($row) {
-			$row->delete();
-		}, $this->rows);
+	/**
+	 * Delete all rows of this rowset
+	 * @param type $txn
+	 * @return \pq\Gateway\Rowset
+	 * @throws \Exception
+	 */
+	function delete($txn = true) {
+		$txn = $txn ? $this->table->getConnection()->startTransaction() : false;
+		try {
+			foreach ($this->rows as $row) {
+				$row->delete();
+			}
+		} catch (\Exception $e) {
+			if ($txn) {
+				$txn->rollback();
+			}
+			throw $e;
+		}
+		if ($txn) {
+			$txn->commit();
+		}
 		return $this;		
 	}
 	
@@ -164,6 +215,8 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 		if (!$this->valid()) {
 			throw new \OutOfBoundsException("Invalid seek position ($pos)");
 		}
+		
+		return $this;
 	}
 	
 	/**
@@ -183,6 +236,16 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	}
 	
 	/**
+	 * Apply a callback on each row of this rowset
+	 * @param callable $cb
+	 * @return \pq\Gateway\Rowset
+	 */
+	function apply(callable $cb) {
+		array_walk($this->rows, $cb, $this);
+		return $this;
+	}
+	
+	/**
 	 * Filter by callback
 	 * @param callable $cb
 	 * @return \pq\Gateway\Rowset
@@ -191,5 +254,14 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 		$rowset = clone $this;
 		$rowset->rows = array_filter($this->rows, $cb);
 		return $rowset;
+	}
+	
+	/**
+	 * Append a row to the rowset
+	 * @param \pq\Gateway\Row $row
+	 */
+	function append(Row $row) {
+		$this->rows[] = $row;
+		return $this;
 	}
 }
