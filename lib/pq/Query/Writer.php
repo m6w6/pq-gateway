@@ -96,6 +96,8 @@ class Writer
 	function param($param, $type = null) {
 		if ($param instanceof Expr) {
 			return (string) $param;
+		} else {
+			var_dump($param);
 		}
 		
 		$this->params[] = $param;

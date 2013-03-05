@@ -91,6 +91,14 @@ class Row implements \JsonSerializable
 		return $where;
 	}
 	
+	protected function changes() {
+		$changes = array();
+		foreach ($this->mods as $name => $cell) {
+			$changes[$name] = $cell->get();
+		}
+		return $changes;
+	}
+	
 	/**
 	 * Get a cell
 	 * @param string $p
@@ -117,7 +125,7 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function create() {
-		$this->data = $this->table->create($this->mods)->current()->data;
+		$this->data = $this->table->create($this->changes())->current()->data;
 		$this->mods = array();
 		return $this;
 	}
@@ -127,7 +135,7 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function update() {
-		$this->data = $this->table->update($this->criteria(), $this->mods)->current()->data;
+		$this->data = $this->table->update($this->criteria(), $this->changes())->current()->data;
 		$this->mods = array();
 		return $this;
 	}

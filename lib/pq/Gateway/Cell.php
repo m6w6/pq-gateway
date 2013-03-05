@@ -64,6 +64,8 @@ class Cell
 	 */
 	function mod($data, $op = null) {
 		if (!($this->data instanceof Expr)) {
+			$this->data = new Expr($this->name);
+			/*
 			if (!isset($this->data)) {
 				$this->data = new Expr($this->name);
 			} elseif (is_numeric($this->data)) {
@@ -71,6 +73,7 @@ class Cell
 			} else {
 				$this->data = new Expr("%s", $this->row->getTable()->getConnection()->quote($this->data));
 			}
+			*/
 		}
 		
 		if ($data instanceof Expr) {
