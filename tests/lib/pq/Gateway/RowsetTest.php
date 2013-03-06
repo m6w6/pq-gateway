@@ -70,6 +70,13 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 		$this->assertCount(1, $rowset);
 		$this->assertCount(4, $this->table->find());
 	}
+	
+	public function testCreateFail() {
+		$this->setExpectedException("\\pq\\Exception");
+		$rowset = new Rowset($this->table);
+		$rowset->append(new Row($this->table, array("foo" => "bar"), true));
+		$rowset->create();
+	}
 
 	public function testUpdate() {
 		$rowset = $this->table->find();
@@ -83,9 +90,25 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 		});
 	}
 
+	public function testUpdateFail() {
+		$this->setExpectedException("pq\\Exception");
+		$rowset = $this->table->find();
+		$rowset->apply(function($row) {
+			$row->data = new \pq\Query\Expr("die");
+		});
+		$rowset->update();
+		
+	}
+
 	public function testDelete() {
 		$this->table->find()->delete();
 		$this->assertCount(0, $this->table->find());
+	}
+
+	public function testDeleteFail() {
+		$this->setExpectedException("pq\\Exception");
+		$rowset = new Rowset($this->table);
+		$rowset->append(new Row($this->table, array("xx" => 0)))->delete();
 	}
 
 	public function testJsonSerialize() {

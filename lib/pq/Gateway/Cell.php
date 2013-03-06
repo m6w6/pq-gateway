@@ -88,7 +88,7 @@ class Cell
 			$this->data->add(new Expr("+ $data"));
 		} else {
 			$data = $this->row->getTable()->getConnection()->quote($data);
-			$this->data->add(new Expr("%s %s"), isset($op) ? $op : "||", $data);
+			$this->data->add(new Expr("%s %s", isset($op) ? $op : "||", $data));
 		}
 		
 		$this->dirty = true;

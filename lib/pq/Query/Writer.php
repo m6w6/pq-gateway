@@ -139,6 +139,6 @@ class Writer
 	 * @return \pq\Result
 	 */
 	function exec(\pq\Connection $c) {
-		return $c->execParams($this, $this->params, $this->types);
+		return $c->execParams($this, $this->getParams(), $this->getTypes());
 	}
 }

@@ -18,7 +18,7 @@ class Expr
 	 * @param string $e the expression or a format string followed by arguments
 	 * @param string ...
 	 */
-	function __construct($e) {
+	function __construct($e, $arg = null) {
 		if (func_num_args() > 1) {
 			$e = call_user_func_array("sprintf", func_get_args());
 		}
@@ -30,7 +30,11 @@ class Expr
 	 * @return string
 	 */
 	function __toString() {
-		return (string) $this->expression . $this->next;
+		$string = $this->expression;
+		if ($this->next) {
+			$string .= " " . $this->next;
+		}
+		return (string) $string;
 	}
 	
 	/**

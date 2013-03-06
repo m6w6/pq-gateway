@@ -143,7 +143,6 @@ class Table
 	function update(array $where, array $data, $returning = "*") {
 		$query = new QueryWriter("UPDATE ".$this->conn->quoteName($this->name));
 		$first = true;
-		$params = array();
 		foreach ($data as $key => $val) {
 			$query->write($first ? "SET" : ",", $key, "=", $query->param($val));
 			$first and $first = false;
