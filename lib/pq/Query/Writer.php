@@ -5,7 +5,7 @@ namespace pq\Query;
 /**
  * A very simple query writer used by \pq\Gateway
  */
-class Writer
+class Writer implements WriterInterface
 {
 	/**
 	 * @var string

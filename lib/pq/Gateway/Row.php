@@ -26,7 +26,7 @@ class Row implements \JsonSerializable
 	 */
 	function __construct(Table $table, array $data = null, $prime = false) {
 		$this->table = $table;
-		$this->data = $data;
+		$this->data = (array) $data;
 		
 		if ($prime) {
 			$this->prime();

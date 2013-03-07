@@ -38,7 +38,7 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	 * @param \pq\Result $result
 	 * @return \pq\Gateway\Rowset
 	 */
-	function __invoke(\pq\Result $result) {
+	function __invoke(\pq\Result $result = null) {
 		$that = clone $this;
 		$that->hydrate($result);
 		return $that;
@@ -54,7 +54,7 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 		$this->rows  = array();
 		
 		if ($result) {
-			$row = $this->row;
+			$row = $this->getRowPrototype();
 
 			if (is_callable($row)) {
 				while (($data = $result->fetchRow(\pq\Result::FETCH_ASSOC))) {
@@ -80,6 +80,14 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	function setRowPrototype($row) {
 		$this->row = $row;
 		return $this;
+	}
+	
+	/**
+	 * Get the row prototype
+	 * @return mixed
+	 */
+	function getRowPrototype() {
+		return $this->row;
 	}
 	
 	/**
@@ -176,12 +184,14 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	function rewind() {
 		$this->index = 0;
 	}
+	
 	/**
 	 * @implements \Iterator
 	 */
 	function next() {
 		++$this->index;
 	}
+	
 	/**
 	 * @implements \Iterator
 	 * @return bool
@@ -189,13 +199,18 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	function valid() {
 		return $this->index < count($this->rows);
 	}
+	
 	/**
 	 * @implements \Iterator
 	 * @return \pq\Gateway\Row
 	 */
 	function current() {
+		if (!$this->valid()) {
+			throw new OutOfBoundsException("Invalid row index {$this->index}");
+		}
 		return $this->rows[$this->index];
 	}
+	
 	/**
 	 * @implements \Iterator
 	 * @return int
@@ -252,6 +267,7 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	 */
 	function filter(callable $cb) {
 		$rowset = clone $this;
+		$rowset->index = 0;
 		$rowset->rows = array_filter($this->rows, $cb);
 		return $rowset;
 	}

@@ -25,6 +25,11 @@ class Table
 	 * @var string
 	 */
 	protected $rowset = "\\pq\\Gateway\\Rowset";
+	
+	/**
+	 * @var \pq\Query\Writer
+	 */
+	protected $query;
 
 	/**
 	 * @param string $name
@@ -43,6 +48,32 @@ class Table
 	function setRowsetPrototype($rowset) {
 		$this->rowset = $rowset;
 		return $this;
+	}
+	
+	/**
+	 * Get the rowset prototype
+	 * @return mixed
+	 */
+	function getRowsetPrototype() {
+		return $this->rowset;
+	}
+	
+	/**
+	 * Set the query writer
+	 * @param \pq\Query\WriterInterface $query
+	 * @return \pq\Gateway\Table
+	 */
+	function setQueryWriter(\pq\Query\WriterInterface $query) {
+		$this->query = $query;
+		return $this;
+	}
+	
+	/**
+	 * Get the query writer
+	 * @return \pq\Query\WriterInterface
+	 */
+	function getQueryWriter() {
+		return $this->query ?: new QueryWriter;
 	}
 	
 	/**
@@ -71,12 +102,10 @@ class Table
 			return $result;
 		}
 		
-		if (is_callable($this->rowset)) {
-			return call_user_func($this->rowset, $result);
-		}
-		
-		if ($this->rowset) {
-			$rowset = $this->rowset;
+		$rowset = $this->getRowsetPrototype();
+		if (is_callable($rowset)) {
+			return $rowset($result);
+		} elseif ($rowset) {
 			return new $rowset($this, $result);
 		}
 		
@@ -92,7 +121,8 @@ class Table
 	 * @return \pq\Result
 	 */
 	function find(array $where = null, $order = null, $limit = 0, $offset = 0) {
-		$query = new QueryWriter("SELECT * FROM ". $this->conn->quoteName($this->name));
+		$query = $this->getQueryWriter()->reset();
+		$query->write("SELECT * FROM", $this->conn->quoteName($this->name));
 		if ($where) {
 			$query->write("WHERE")->criteria($where);
 		}
@@ -113,7 +143,8 @@ class Table
 	 * @return \pq\Result
 	 */
 	function create(array $data = null, $returning = "*") {
-		$query = new QueryWriter("INSERT INTO ".$this->conn->quoteName($this->name));
+		$query = $this->getQueryWriter()->reset();
+		$query->write("INSERT INTO", $this->conn->quoteName($this->name));
 		if ($data) {
 			$first = true;
 			$params = array();
@@ -141,7 +172,8 @@ class Table
 	 * @retunr \pq\Result
 	 */
 	function update(array $where, array $data, $returning = "*") {
-		$query = new QueryWriter("UPDATE ".$this->conn->quoteName($this->name));
+		$query = $this->getQueryWriter()->reset();
+		$query->write("UPDATE", $this->conn->quoteName($this->name));
 		$first = true;
 		foreach ($data as $key => $val) {
 			$query->write($first ? "SET" : ",", $key, "=", $query->param($val));
@@ -161,7 +193,8 @@ class Table
 	 * @return pq\Result
 	 */
 	function delete(array $where, $returning = null) {
-		$query = new QueryWriter("DELETE FROM ".$this->conn->quoteName($this->name));
+		$query = $this->getQueryWriter()->reset();
+		$query->write("DELETE FROM", $this->conn->quoteName($this->name));
 		$query->write("WHERE")->criteria($where);
 		if (strlen($returning)) {
 			$query->write("RETURNING", $returning);
