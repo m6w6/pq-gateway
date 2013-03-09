@@ -206,7 +206,7 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	 */
 	function current() {
 		if (!$this->valid()) {
-			throw new OutOfBoundsException("Invalid row index {$this->index}");
+			throw new \OutOfBoundsException("Invalid row index {$this->index}");
 		}
 		return $this->rows[$this->index];
 	}

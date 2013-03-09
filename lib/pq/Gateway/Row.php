@@ -130,7 +130,7 @@ class Row implements \JsonSerializable
 	 */
 	function __get($p) {
 		if (!isset($this->cell[$p])) {
-			$this->cell[$p] = new Cell($this, $p, $this->data[$p]);
+			$this->cell[$p] = new Cell($this, $p, isset($this->data[$p]) ? $this->data[$p] : null);
 		}
 		return $this->cell[$p];
 	}
