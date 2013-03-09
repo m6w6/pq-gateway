@@ -1,0 +1,20 @@
+{
+    "name": "mike_php_net/pq-gateway",
+    "type": "library",
+    "description": "Table/row gateway for ext-pq",
+    "keywords": ["postgres", "orm", "gateway", "pq"],
+    "homepage": "http://bitbucket.org/mike_php_net/pq-gateway",
+    "license": "BSD-2-Clause",
+    "authors": [
+        {
+            "name": "Michael Wallner",
+            "email": "mike@php.net"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "pq\\Gateway": "lib",
+			"pq\\uery": "lib"
+        }
+    }
+}
