@@ -94,7 +94,7 @@ class Writer implements WriterInterface
 	 * @return string
 	 */
 	function param($param, $type = null) {
-		if ($param instanceof \pq\Gateway\Cell) {
+		if ($param instanceof ExpressibleInterface) {
 			$param = $param->get();
 		}
 		if ($param instanceof Expr) {
@@ -131,14 +131,5 @@ class Writer implements WriterInterface
 			$this->write(")");
 		}
 		return $this;
-	}
-
-	/**
-	 * Execute the query through \pq\Connection::execParams($this, $this->params, $this->types)
-	 * @param \pq\Connection $c
-	 * @return \pq\Result
-	 */
-	function exec(\pq\Connection $c) {
-		return $c->execParams($this, $this->getParams(), $this->getTypes());
 	}
 }

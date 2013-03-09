@@ -3,6 +3,7 @@
 namespace pq\Gateway;
 
 use \pq\Query\Writer as QueryWriter;
+use \pq\Query\Executor as QueryExecutor;
 
 class Table
 {
@@ -27,9 +28,14 @@ class Table
 	protected $rowset = "\\pq\\Gateway\\Rowset";
 	
 	/**
-	 * @var \pq\Query\Writer
+	 * @var \pq\Query\WriterIterface
 	 */
 	protected $query;
+	
+	/**
+	 * @var \pq\Query\ExecutorInterface
+	 */
+	protected $exec;
 
 	/**
 	 * @param string $name
@@ -73,7 +79,31 @@ class Table
 	 * @return \pq\Query\WriterInterface
 	 */
 	function getQueryWriter() {
-		return $this->query ?: new QueryWriter;
+		if (!$this->query) {
+			$this->query = new QueryWriter;
+		}
+		return $this->query;
+	}
+	
+	/**
+	 * Set the query executor
+	 * @param \pq\Query\ExecutorInterface $exec
+	 * @return \pq\Gateway\Table
+	 */
+	function setQueryExecutor(\pq\Query\ExecutorInterface $exec) {
+		$this->exec = $exec;
+		return $this;
+	}
+	
+	/**
+	 * Get the query executor
+	 * @return \pq\Query\ExecutorInterface
+	 */
+	function getQueryExecutor() {
+		if (!$this->exec) {
+			$this->exec = new QueryExecutor($this->conn);
+		}
+		return $this->exec;
 	}
 	
 	/**
@@ -92,12 +122,19 @@ class Table
 
 	/**
 	 * Execute the query
-	 * @param \pq\Query\Writer $query
+	 * @param \pq\Query\WriterInterface $query
 	 * @return mixed
 	 */
 	protected function execute(QueryWriter $query) {
-		$result = $query->exec($this->conn);
-		
+		return $this->getQueryExecutor()->execute($query, array($this, "onResult"));
+	}
+
+	/**
+	 * Retreives the result of an executed query
+	 * @param \pq\Result $result
+	 * @return mixed
+	 */
+	public function onResult(\pq\Result $result) {
 		if ($result->status != \pq\Result::TUPLES_OK) {
 			return $result;
 		}
@@ -111,14 +148,14 @@ class Table
 		
 		return $result;
 	}
-
+	
 	/**
 	 * Find rows in the table
 	 * @param array $where
 	 * @param array|string $order
 	 * @param int $limit
 	 * @param int $offset
-	 * @return \pq\Result
+	 * @return mixed
 	 */
 	function find(array $where = null, $order = null, $limit = 0, $offset = 0) {
 		$query = $this->getQueryWriter()->reset();
@@ -140,7 +177,7 @@ class Table
 	 * Insert a row into the table
 	 * @param array $data
 	 * @param string $returning
-	 * @return \pq\Result
+	 * @return mixed
 	 */
 	function create(array $data = null, $returning = "*") {
 		$query = $this->getQueryWriter()->reset();
@@ -169,7 +206,7 @@ class Table
 	 * @param array $where
 	 * @param array $data
 	 * @param string $returning
-	 * @retunr \pq\Result
+	 * @retunr mixed
 	 */
 	function update(array $where, array $data, $returning = "*") {
 		$query = $this->getQueryWriter()->reset();
@@ -190,7 +227,7 @@ class Table
 	 * Delete rows from the table
 	 * @param array $where
 	 * @param string $returning
-	 * @return pq\Result
+	 * @return mixed
 	 */
 	function delete(array $where, $returning = null) {
 		$query = $this->getQueryWriter()->reset();

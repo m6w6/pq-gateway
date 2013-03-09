@@ -2,9 +2,9 @@
 
 namespace pq\Gateway;
 
-use \pq\Query\Expr;
+use \pq\Query\Expressible;
 
-class Cell
+class Cell extends Expressible
 {
 	/**
 	 * @var \pq\Gateway\Row
@@ -15,11 +15,6 @@ class Cell
 	 * @var string
 	 */
 	protected $name;
-	
-	/**
-	 * @var mixed
-	 */
-	protected $data;
 	
 	/**
 	 * @var bool
@@ -33,26 +28,10 @@ class Cell
 	 * @param bool $dirty
 	 */
 	function __construct(Row $row, $name, $data, $dirty = false) {
+		parent::__construct($data);
 		$this->row = $row;
 		$this->name = $name;
-		$this->data = $data;
 		$this->dirty = $dirty;
-	}
-	
-	/**
-	 * Get value as string
-	 * @return string
-	 */
-	function __toString() {
-		return (string) $this->data;
-	}
-	
-	/**
-	 * Test whether the value is an unevaluated expression
-	 * @return bool
-	 */
-	function isExpr() {
-		return $this->data instanceof Expr;
 	}
 	
 	/**
@@ -64,11 +43,14 @@ class Cell
 	}
 	
 	/**
-	 * Get value
-	 * @return mixed
+	 * Set the value
+	 * @param mixed $data
+	 * @return \pq\Gateway\Cell
 	 */
-	function get() {
-		return $this->data;
+	function set($data) {
+		parent::set($data);
+		$this->dirty = true;
+		return $this;
 	}
 	
 	/**
@@ -78,32 +60,9 @@ class Cell
 	 * @return \pq\Gateway\Cell
 	 */
 	function mod($data, $op = null) {
-		if (!($this->data instanceof Expr)) {
-			$this->data = new Expr($this->name);
-		}
-		
-		if ($data instanceof Expr) {
-			$this->data->add($data);
-		} elseif (!isset($op) && is_numeric($data)) {
-			$this->data->add(new Expr("+ $data"));
-		} else {
-			$data = $this->row->getTable()->getConnection()->quote($data);
-			$this->data->add(new Expr("%s %s", isset($op) ? $op : "||", $data));
-		}
-		
+		parent::mod($data, $op);
 		$this->dirty = true;
-		
 		return $this;
 	}
 	
-	/**
-	 * Set the value in this cell
-	 * @param mixed $data
-	 * @return \pq\Gateway\Cell
-	 */
-	function set($data) {
-		$this->data = $data;
-		$this->dirty = true;
-		return $this;
-	}
 }
