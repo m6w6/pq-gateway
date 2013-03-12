@@ -13,6 +13,11 @@ class Table
 	public static $defaultConnection;
 	
 	/**
+	 * @var callable
+	 */
+	public static $defaultResolver;
+	
+	/**
 	 * @var \pq\Connection
 	 */
 	protected $conn;
@@ -36,21 +41,36 @@ class Table
 	 * @var \pq\Query\ExecutorInterface
 	 */
 	protected $exec;
-
-	/**
-	 * @var array
-	 */
-	protected $dependents;
 	
+	/**
+	 * @var \pq\Gateway\Table\Relations
+	 */
+	protected $relations;
+	
+	/**
+	 * @param string $table
+	 * @return \pq\Gateway\Table
+	 */
+	public static function resolve($table) {
+		if ($table instanceof Table) {
+			return $table;
+		}
+		if (is_callable(static::$defaultResolver)) {
+			if (($resolved = call_user_func(static::$defaultResolver, $table))) {
+				return $resolved;
+			}
+		}
+		return new Table($table);
+	}
+
 	/**
 	 * @param string $name
 	 * @param \pq\Connection $conn
 	 * @param array $dependents
 	 */
-	function __construct($name, \pq\Connection $conn = null, array $dependents = array()) {
+	function __construct($name, \pq\Connection $conn = null) {
 		$this->name = $name;
 		$this->conn = $conn ?: static::$defaultConnection ?: new \pq\Connection;
-		$this->dependents = $dependents;
 	}
 	
 	/**
@@ -114,6 +134,40 @@ class Table
 	}
 	
 	/**
+	 * Get foreign key relations
+	 * @param string $to fkey
+	 * @return \pq\Gateway\Table\Relations|stdClass
+	 */
+	function getRelations($to = null) {
+		if (!isset($this->relations)) {
+			$this->relations = new Table\Relations($this);
+		}
+		if (isset($to)) {
+			if (!isset($this->relations->$to)) {
+				return null;
+			}
+			return $this->relations->$to;
+		}
+		return $this->relations;
+	}
+	
+	/**
+	 * Check whether a certain relation exists
+	 * @param string $name
+	 * @param string $table
+	 * @return bool
+	 */
+	function hasRelation($name, $table = null) {
+		if (!($rel = $this->getRelations($name))) {
+			return false;
+		}
+		if (!isset($table)) {
+			return true;
+		}
+		return isset($rel->$table);
+	}
+	
+	/**
 	 * @return \pq\Connection
 	 */
 	function getConnection() {
@@ -133,6 +187,7 @@ class Table
 	 * @return mixed
 	 */
 	protected function execute(QueryWriter $query) {
+		echo $query,"\n",json_encode($query->getParams()),"\n";
 		return $this->getQueryExecutor()->execute($query, array($this, "onResult"));
 	}
 
@@ -141,8 +196,8 @@ class Table
 	 * @param \pq\Result $result
 	 * @return mixed
 	 */
-	public function onResult(\pq\Result $result) {
-		if ($result->status != \pq\Result::TUPLES_OK) {
+	public function onResult(\pq\Result $result = null) {
+		if ($result && $result->status != \pq\Result::TUPLES_OK) {
 			return $result;
 		}
 		
@@ -181,40 +236,53 @@ class Table
 	}
 	
 	/**
-	 * Get the parent row of a row by foreign key
-	 * @param \pq\Gateway\Row $dependent
+	 * Get the child rows of a row by foreign key
+	 * @param \pq\Gateway\Row $foreign
 	 * @param string $name optional fkey name
 	 * @param string $order
 	 * @param int $limit
 	 * @param int $offset
 	 * @return mixed
 	 */
-	function of(Row $dependent, $name = null, $order = null, $limit = 0, $offset = 0) {
-		if (!$name) {
-			$name = $dependent->getTable()->getName();
+	function of(Row $foreign, $name = null, $order = null, $limit = 0, $offset = 0) {
+		// select * from $this where $this->$foreignColumn = $foreign->$referencedColumn
+		
+		if (!isset($name)) {
+			$name = $this->getName();
 		}
-		return $this->find(array("{$name}_id=" => $dependent->id),
-			$order, $limit, $offset);
+		
+		if (!$foreign->getTable()->hasRelation($name, $this->getName())) {
+			return $this->onResult(null);
+		}
+		$rel = $foreign->getTable()->getRelations($name)->{$this->getName()};
+		
+		return $this->find(
+			array($rel->foreignColumn . "=" => $foreign->{$rel->referencedColumn}),
+			$order, $limit, $offset
+		);
 	}
 	
 	/**
-	 * Get the child rows of a row by foreign key
+	 * Get the parent rows of a row by foreign key
 	 * @param \pq\Gateway\Row $me
-	 * @param string $dependent
+	 * @param string $foreign
 	 * @param string $order
 	 * @param int $limit
 	 * @param int $offset
 	 * @return mixed
-	 * @throws \LogicException
 	 */
-	function by(Row $me, $dependent, $order = null, $limit = 0, $offset = 0) {
-		if (!isset($this->dependents[$dependent])) {
-			throw new \LogicException("Unknown dependent table $dependent");
-		}
+	function by(Row $me, $foreign, $order = null, $limit = 0, $offset = 0) {
+		// select * from $foreign where $foreign->$referencedColumn = $me->$foreignColumn
 		
-		$dependentClass = $this->dependents[$dependent];
-		$dependentModel = new $dependentClass($this->conn);
-		return $dependentModel->of($me, null, $order, $limit, $offset);
+		if (!$this->hasRelation($foreign, $this->getName())) {
+			return $this->onResult(null);
+		}
+		$rel = $this->getRelations($foreign)->{$this->getName()};
+		
+		return static::resolve($rel->referencedTable)->find(
+			array($rel->referencedColumn . "=" => $me->{$rel->foreignColumn}),
+			$order, $limit, $offset
+		);
 	}
 
 	/**

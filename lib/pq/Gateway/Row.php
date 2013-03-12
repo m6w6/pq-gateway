@@ -151,14 +151,13 @@ class Row implements \JsonSerializable
 	}
 	
 	/**
-	 * Get a cell
+	 * Get a cell or parent rows
 	 * @param string $p
 	 * @return \pq\Gateway\Cell|\pq\Gateway\Rowset
 	 */
 	function __get($p) {
-		if (isset($this->data["{$p}_id"])) {
-			// FIXME cache
-			return $this->getTable()->by($this, $p);
+		if ($this->table->hasRelation($p)) {
+			return $this->table->by($this, $p);
 		}
 		if (!isset($this->cell[$p])) {
 			$this->cell[$p] = new Cell($this, $p, isset($this->data[$p]) ? $this->data[$p] : null);
@@ -175,13 +174,35 @@ class Row implements \JsonSerializable
 		$this->__get($p)->set($v);
 	}
 	
+	/**
+	 * Unset a cell value
+	 * @param string $p
+	 */
 	function __unset($p) {
 		unset($this->data[$p]);
 		unset($this->cell[$p]);
 	}
 	
+	/**
+	 * Check if a cell isset
+	 * @param string $p
+	 * @return bool
+	 */
 	function __isset($p) {
 		return isset($this->data[$p]) || isset($this->cell[$p]);
+	}
+	
+	/**
+	 * Get child rows of this row by foreign key
+	 * @see \pq\Gateway\Table::of()
+	 * @param string $foreign
+	 * @param array $args [order, limit, offset]
+	 * @return \pq\Gateway\Rowset
+	 */
+	function __call($foreign, array $args) {
+		array_unshift($args, $this);
+		$table = forward_static_call(array(get_class($this->getTable()), "resolve"), $foreign);
+		return call_user_func_array(array($table, "of"), $args);
 	}
 	
 	/**
