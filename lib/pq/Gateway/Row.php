@@ -43,13 +43,40 @@ class Row implements \JsonSerializable
 		$that->data = $data;
 		return $that->prime();
 	}
+
+	/**
+	 * Export current state as an array
+	 * @return array
+	 * @throws \UnexpectedValueException if a cell has been modified by an expression
+	 */
+	function export() {
+		$export = array_merge($this->data, $this->cell);
+		foreach ($export as &$val) {
+			if ($val instanceof Cell) {
+				if ($val->isExpr()) {
+					throw new \UnexpectedValueException("Cannot export an SQL expression");
+				}
+				$val = $val->get();
+			}
+		}
+		return $export;
+	}
 	
+	/**
+	 * Export current state with security sensitive data removed. You should override that, just
+	 * calls export() by default.
+	 * @return array
+	 */
+	function exportPublic() {
+		return $this->export();
+	}
+
 	/**
 	 * @implements JsonSerializable
 	 * @return array
 	 */
 	function jsonSerialize() {
-		return $this->data;
+		return $this->exportPublic();
 	}
 	
 	/**
@@ -126,9 +153,13 @@ class Row implements \JsonSerializable
 	/**
 	 * Get a cell
 	 * @param string $p
-	 * @return \pq\Gateway\Cell
+	 * @return \pq\Gateway\Cell|\pq\Gateway\Rowset
 	 */
 	function __get($p) {
+		if (isset($this->data["{$p}_id"])) {
+			// FIXME cache
+			return $this->getTable()->by($this, $p);
+		}
 		if (!isset($this->cell[$p])) {
 			$this->cell[$p] = new Cell($this, $p, isset($this->data[$p]) ? $this->data[$p] : null);
 		}
@@ -141,7 +172,16 @@ class Row implements \JsonSerializable
 	 * @param mixed $v
 	 */
 	function __set($p, $v) {
-		$this->__get($p)->set(($v instanceof Cell) ? $v->get() : $v);
+		$this->__get($p)->set($v);
+	}
+	
+	function __unset($p) {
+		unset($this->data[$p]);
+		unset($this->cell[$p]);
+	}
+	
+	function __isset($p) {
+		return isset($this->data[$p]) || isset($this->cell[$p]);
 	}
 	
 	/**

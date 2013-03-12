@@ -38,12 +38,19 @@ class Table
 	protected $exec;
 
 	/**
+	 * @var array
+	 */
+	protected $dependents;
+	
+	/**
 	 * @param string $name
 	 * @param \pq\Connection $conn
+	 * @param array $dependents
 	 */
-	function __construct($name, \pq\Connection $conn = null) {
+	function __construct($name, \pq\Connection $conn = null, array $dependents = array()) {
 		$this->name = $name;
 		$this->conn = $conn ?: static::$defaultConnection ?: new \pq\Connection;
+		$this->dependents = $dependents;
 	}
 	
 	/**
@@ -171,6 +178,43 @@ class Table
 		}
 		$query->write("OFFSET", $offset);
 		return $this->execute($query);
+	}
+	
+	/**
+	 * Get the parent row of a row by foreign key
+	 * @param \pq\Gateway\Row $dependent
+	 * @param string $name optional fkey name
+	 * @param string $order
+	 * @param int $limit
+	 * @param int $offset
+	 * @return mixed
+	 */
+	function of(Row $dependent, $name = null, $order = null, $limit = 0, $offset = 0) {
+		if (!$name) {
+			$name = $dependent->getTable()->getName();
+		}
+		return $this->find(array("{$name}_id=" => $dependent->id),
+			$order, $limit, $offset);
+	}
+	
+	/**
+	 * Get the child rows of a row by foreign key
+	 * @param \pq\Gateway\Row $me
+	 * @param string $dependent
+	 * @param string $order
+	 * @param int $limit
+	 * @param int $offset
+	 * @return mixed
+	 * @throws \LogicException
+	 */
+	function by(Row $me, $dependent, $order = null, $limit = 0, $offset = 0) {
+		if (!isset($this->dependents[$dependent])) {
+			throw new \LogicException("Unknown dependent table $dependent");
+		}
+		
+		$dependentClass = $this->dependents[$dependent];
+		$dependentModel = new $dependentClass($this->conn);
+		return $dependentModel->of($me, null, $order, $limit, $offset);
 	}
 
 	/**

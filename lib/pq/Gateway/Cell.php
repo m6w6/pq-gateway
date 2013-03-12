@@ -48,6 +48,14 @@ class Cell extends Expressible
 	 * @return \pq\Gateway\Cell
 	 */
 	function set($data) {
+		if ($data instanceof Row) {
+			$this->row->__set($data->getTable()->getName() . "_id", $data->id);
+			$this->row->__unset($this->name);
+			return $this;
+		}
+		if ($data instanceof Cell) {
+			$data = $data->get();
+		}
 		parent::set($data);
 		$this->dirty = true;
 		return $this;
