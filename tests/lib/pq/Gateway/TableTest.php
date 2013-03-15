@@ -17,21 +17,19 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 	protected $table;
 
 	protected function setUp() {
-		$this->conn = new \pq\Connection(PQ_DSN);
-		$this->conn->exec(PQ_TEST_DROP_TABLE);
-		$this->conn->exec(PQ_TEST_CREATE_TABLE);
+		$this->conn = new \pq\Connection(PQ_TEST_DSN);
+		$this->conn->exec(PQ_TEST_TABLE_CREATE);
+		$this->conn->exec(PQ_TEST_REFTABLE_CREATE);
+		$this->conn->exec(PQ_TEST_DATA);
 		Table::$defaultConnection = $this->conn;
-		$this->table = new Table(PQ_TEST_TABLE_NAME);
+		$this->table = new Table("test");
 	}
 
 	protected function tearDown() {
-		$this->conn->exec(PQ_TEST_DROP_TABLE);
+		$this->conn->exec(PQ_TEST_REFTABLE_DROP);
+		$this->conn->exec(PQ_TEST_TABLE_DROP);
 	}
 	
-	protected function createTestData() {
-		$this->conn->exec(PQ_TEST_CREATE_DATA);
-	}
-
 	public function testSetRowsetPrototype() {
 		$prop = new \ReflectionProperty("\\pq\\Gateway\\Table", "rowset");
 		$prop->setAccessible(true);
@@ -48,7 +46,7 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	public function testGetName() {
-		$this->assertSame(PQ_TEST_TABLE_NAME, $this->table->getName());
+		$this->assertSame("test", $this->table->getName());
 	}
 
 	public function testFind() {

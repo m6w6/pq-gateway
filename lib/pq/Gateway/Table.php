@@ -18,6 +18,11 @@ class Table
 	public static $defaultResolver;
 	
 	/**
+	 * @var \pq\Gateway\Table\CacheInterface
+	 */
+	public static $defaultMetadataCache;
+	
+	/**
 	 * @var \pq\Connection
 	 */
 	protected $conn;
@@ -48,6 +53,11 @@ class Table
 	protected $relations;
 	
 	/**
+	 * @var \pq\Gateway\Table\CacheInterface
+	 */
+	protected $metadataCache;
+	
+	/**
 	 * @param string $table
 	 * @return \pq\Gateway\Table
 	 */
@@ -71,6 +81,22 @@ class Table
 	function __construct($name, \pq\Connection $conn = null) {
 		$this->name = $name;
 		$this->conn = $conn ?: static::$defaultConnection ?: new \pq\Connection;
+	}
+	
+	/**
+	 * Get the complete PostgreSQL connection string
+	 * @return string
+	 */
+	function __toString() {
+		return sprintf("postgresql://%s:%s@%s:%d/%s?%s#%s",
+			$this->conn->user,
+			$this->conn->pass,
+			$this->conn->host,
+			$this->conn->port,
+			$this->conn->db,
+			$this->conn->options,
+			$this->getName()
+		);
 	}
 	
 	/**
@@ -134,6 +160,26 @@ class Table
 	}
 	
 	/**
+	 * Get the metadata cache
+	 * @return \pq\Gateway\Table\CacheInterface
+	 */
+	function getMetadataCache() {
+		if (!isset($this->metadatCache)) {
+			$this->metadataCache = static::$defaultMetadataCache ?: new Table\StaticCache;
+		}
+		return $this->metadataCache;
+	}
+	
+	/**
+	 * Set the metadata cache
+	 * @param \pq\Gateway\Table\CacheInterface $cache
+	 */
+	function setMetadataCache(Table\CacheInterface $cache) {
+		$this->metadataCache = $cache;
+		return $this;
+	}
+	
+	/**
 	 * Get foreign key relations
 	 * @param string $to fkey
 	 * @return \pq\Gateway\Table\Relations|stdClass
@@ -187,7 +233,6 @@ class Table
 	 * @return mixed
 	 */
 	protected function execute(QueryWriter $query) {
-		echo $query,"\n",json_encode($query->getParams()),"\n";
 		return $this->getQueryExecutor()->execute($query, array($this, "onResult"));
 	}
 

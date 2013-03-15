@@ -17,19 +17,21 @@ class CellTest extends \PHPUnit_Framework_TestCase {
 	protected $table;
 
 	protected function setUp() {
-		$this->conn = new \pq\Connection(PQ_DSN);
-		$this->conn->exec(PQ_TEST_DROP_TABLE);
-		$this->conn->exec(PQ_TEST_CREATE_TABLE);
-		$this->conn->exec(PQ_TEST_CREATE_DATA);
-		$this->table = new Table(PQ_TEST_TABLE_NAME, $this->conn);
+		$this->conn = new \pq\Connection(PQ_TEST_DSN);
+		$this->conn->exec(PQ_TEST_TABLE_CREATE);
+		$this->conn->exec(PQ_TEST_REFTABLE_CREATE);
+		$this->conn->exec(PQ_TEST_DATA);
+		Table::$defaultConnection = $this->conn;
+		$this->table = new Table("test");
 	}
 
 	protected function tearDown() {
-		$this->conn->exec(PQ_TEST_DROP_TABLE);
+		$this->conn->exec(PQ_TEST_REFTABLE_DROP);
+		$this->conn->exec(PQ_TEST_TABLE_DROP);
 	}
 
 	/**
-	 * This is very bad test…
+	 * This is a very bad test…
 	 */
 	public function testBasic() {
 		$row = $this->table->find(null, "id desc", 1)->current();

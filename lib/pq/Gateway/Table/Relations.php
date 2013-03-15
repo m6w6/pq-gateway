@@ -13,18 +13,18 @@ select
     ,att2.attname                                               as "referencedColumn"
 from
      pg_constraint co
-    ,pg_class      cl2
     ,pg_class      cl1
-    ,pg_attribute  att2
+    ,pg_class      cl2
     ,pg_attribute  att1
+    ,pg_attribute  att2
 where
 	(	cl1.relname = \$1
 	or	cl2.relname = \$1)
 and co.confrelid != 0
-and co.confrelid  = cl2.oid
 and co.conrelid   = cl1.oid
-and co.confkey[1] = att2.attnum and cl2.oid = att2.attrelid
 and co.conkey[1]  = att1.attnum and cl1.oid = att1.attrelid
+and co.confrelid  = cl2.oid
+and co.confkey[1] = att2.attnum and cl2.oid = att2.attrelid
 order by 
 	 cl1.relname
 	,att1.attnum
@@ -35,10 +35,13 @@ class Relations
 	public $references;
 	
 	function __construct(Table $table) {
-		// FIXME cache
-		$this->references = $table->getConnection()
-			->execParams(RELATION_SQL, array($table->getName()))
-			->map(array(0,1), array(2,3,4), \pq\Result::FETCH_OBJECT);
+		$cache = $table->getMetadataCache();
+		if (!($this->references = $cache->get("$table:references"))) {
+			$this->references = $table->getConnection()
+				->execParams(RELATION_SQL, array($table->getName()))
+				->map(array(0,1), array(2,3,4), \pq\Result::FETCH_OBJECT);
+			$cache->set("$table:references", $this->references);
+		}
 	}
 	
 	function __isset($r) {
