@@ -65,8 +65,8 @@ class Row implements \JsonSerializable
 	}
 	
 	/**
-	 * Export current state with security sensitive data removed. You should override that, just
-	 * calls export() by default.
+	 * Export current state with security sensitive data removed. You should override that.
+	 * Just calls export() by default.
 	 * @return array
 	 */
 	function exportPublic() {
@@ -167,10 +167,6 @@ class Row implements \JsonSerializable
 				$where["$col IS"] = new QueryExpr("NULL");
 			}
 		}
-		
-		if (($lock = $this->getTable()->getLock())) {
-			$lock->criteria($this, $where);
-		}
 		return $where;
 	}
 	
@@ -262,7 +258,11 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function update() {
-		$rowset = $this->table->update($this->criteria(), $this->changes());
+		$criteria = $this->criteria();
+		if (($lock = $this->getTable()->getLock())) {
+			$lock->onUpdate($this, $criteria);
+		}
+		$rowset = $this->table->update($criteria, $this->changes());
 		if (!count($rowset)) {
 			throw new \UnexpectedValueException("No row updated");
 		}

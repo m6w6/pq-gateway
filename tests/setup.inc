@@ -74,12 +74,7 @@ class QueryLogger implements \SplObserver
 		if (isset($result)) {
 			fprintf($this->fp, "[%s] R %s\n", 
 				date_create()->format("Y-m-d H:i:s"),
-				json_encode([
-					"S" => $result->statusMessage, 
-					"N" => $result->numRows, 
-					"C" => $result->numCols,
-					"A" => $result->affectedRows
-				]));
+				json_encode($result));
 		} elseif (($query = $executor->getQuery())) {
 			fprintf($this->fp, "[%s] Q %s %% %s\n", 
 				date_create()->format("Y-m-d H:i:s"),

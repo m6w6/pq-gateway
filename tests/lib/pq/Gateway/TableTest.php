@@ -84,4 +84,17 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 		$this->table->delete(array("id!=" => 0));
 		$this->assertCount(0, $this->table->find());
 	}
+	
+	public function testWith() {
+		$relation = $this->table->getRelations("test")->reftest;
+		$rowset = $this->table->with([$relation], array("another_test_id=" => 2));
+		$this->assertCount(1, $rowset);
+		$this->assertEquals(array(
+			"id" => 2,
+			"created" => date_create("today")->format("Y-m-d H:i:s"),
+			"counter" => 0,
+			"number" => 0,
+			"data" => "today"
+		), $rowset->current()->getData());
+	}
 }

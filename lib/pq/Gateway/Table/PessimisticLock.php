@@ -15,7 +15,7 @@ class PessimisticLock implements LockInterface
 	 * @param array $ignore
 	 * @throws \UnexpectedValueException if the row has already been modified
 	 */
-	function criteria(Row $row, array &$ignore) {
+	function onUpdate(Row $row, array &$ignore) {
 		$where = array();
 		foreach ($row->getIdentity() as $col => $val) {
 			if (isset($val)) {

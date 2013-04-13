@@ -90,7 +90,6 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 	function testOptimisticLockFail() {
 		$this->table->setLock(new Table\OptimisticLock("counter"));
 		$row = $this->table->find(null, null, 1)->current();
-		$cnt = $row->counter->get();
 		$row->data = "foo";
 		executeInConcurrentTransaction(
 			$this->table->getQueryExecutor(), 
@@ -103,7 +102,7 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 	function testRef() {
 		foreach ($this->table->find() as $row) {
 			foreach ($row->reftest() as $ref) {
-				$this->assertEquals($row->id->get(), $ref->test->id->get());
+				$this->assertEquals($row->id->get(), $ref->test->current()->id->get());
 			}
 		}
 	}

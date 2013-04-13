@@ -2,6 +2,7 @@
 
 namespace pq\Gateway;
 
+use \pq\Query\Expr as QueryExpr;
 use \pq\Query\Writer as QueryWriter;
 use \pq\Query\Executor as QueryExecutor;
 
@@ -88,8 +89,12 @@ class Table
 	 * @param \pq\Connection $conn
 	 * @param array $dependents
 	 */
-	function __construct($name, \pq\Connection $conn = null) {
-		$this->name = $name;
+	function __construct($name = null, \pq\Connection $conn = null) {
+		if (isset($name)) {
+			$this->name = $name;
+		} elseif (!isset($this->name)) {
+			throw new \InvalidArgumentException("Table must have a name");
+		}
 		$this->conn = $conn ?: static::$defaultConnection ?: new \pq\Connection;
 	}
 	
@@ -373,6 +378,42 @@ class Table
 			array($rel->referencedColumn . "=" => $me->{$rel->foreignColumn}),
 			$order, $limit, $offset
 		);
+	}
+	
+	/**
+	 * Get rows dependent on other rows by foreign keys
+	 * @param array $relations
+	 * @param array $where
+	 * @param string $order
+	 * @param int $limit
+	 * @param int $offset
+	 * @return mixed
+	 */
+	function with(array $relations, array $where = null, $order = null, $limit = 0, $offset = 0) {
+		$qthis = $this->conn->quoteName($this->getName());
+		$query = $this->getQueryWriter()->reset();
+		$query->write("SELECT", "$qthis.*", "FROM", $qthis);
+		foreach ($relations as $relation) {
+			$query->write("JOIN", $relation->foreignTable)->write("ON")->criteria(
+				array(
+					"{$relation->referencedTable}.{$relation->referencedColumn}=" => 
+						new QueryExpr("{$relation->foreignTable}.{$relation->foreignColumn}")
+				)
+			);
+		}
+		if ($where) {
+			$query->write("WHERE")->criteria($where);
+		}
+		if ($order) {
+			$query->write("ORDER BY", $order);
+		}
+		if ($limit) {
+			$query->write("LIMIT", $limit);
+		}
+		if ($offset) {
+			$query->write("OFFSET", $offset);
+		}
+		return $this->execute($query);
 	}
 
 	/**

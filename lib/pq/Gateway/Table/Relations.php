@@ -46,7 +46,7 @@ class Relations
 			$table->getQueryExecutor()->execute(
 				new \pq\Query\Writer(RELATION_SQL, array($table->getName())),
 				function($result) use($table, $cache) {
-					$this->references = $result->map(array(0,1), array(2,3,4), \pq\Result::FETCH_OBJECT);
+					$this->references = $result->map(array(0,1), array(1,2,3,4), \pq\Result::FETCH_OBJECT);
 					$cache->set("$table#relations", $this->references);
 				}
 			);

@@ -23,11 +23,11 @@ class OptimisticLock implements LockInterface
 	}
 	
 	/**
-	 * @implements LockInterface
+	 * @inheritdoc
 	 * @param \pq\Gateway\Row $row
 	 * @param array $where reference to the criteria
 	 */
-	function criteria(Row $row, array &$where) {
+	function onUpdate(Row $row, array &$where) {
 		$where["{$this->column}="] = $row->getData()[$this->column];
 		$row->{$this->column}->mod(+1);
 	}
