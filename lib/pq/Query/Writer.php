@@ -48,7 +48,13 @@ class Writer implements WriterInterface
 	 * @return string
 	 */
 	protected function reduce($q, $v) {
-		return $q . " " . (is_array($v) ? implode(", ", $v) : $v);
+		if (is_array($v)) {
+			$v = implode(", ", $v);
+		}
+		if (strlen($q)) {
+			$q .= " ";
+		}
+		return $q . $v;
 	}
 
 	/**
@@ -83,6 +89,9 @@ class Writer implements WriterInterface
 	 * @return \pq\Query\Writer
 	 */
 	function write() {
+		if (strlen($this->query)) {
+			$this->query .= " ";
+		}
 		$this->query .= array_reduce(func_get_args(), array($this, "reduce"));
 		return $this;
 	}

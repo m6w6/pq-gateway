@@ -48,6 +48,11 @@ class Table
 	protected $exec;
 	
 	/**
+	 * @var \pq\Gateway\Table\Identity
+	 */
+	protected $identity;
+	
+	/**
 	 * @var \pq\Gateway\Table\Relations
 	 */
 	protected $relations;
@@ -56,6 +61,11 @@ class Table
 	 * @var \pq\Gateway\Table\CacheInterface
 	 */
 	protected $metadataCache;
+	
+	/**
+	 * @var \pq\Gateway\Table\LockInterface
+	 */
+	protected $lock;
 	
 	/**
 	 * @param string $table
@@ -180,6 +190,17 @@ class Table
 	}
 	
 	/**
+	 * Get the primary key
+	 * @return \pq\Gateway\Table\Identity
+	 */
+	function getIdentity() {
+		if (!isset($this->identity)) {
+			$this->identity = new Table\Identity($this);
+		}
+		return $this->identity;
+	}
+	
+	/**
 	 * Get foreign key relations
 	 * @param string $to fkey
 	 * @return \pq\Gateway\Table\Relations|stdClass
@@ -228,6 +249,24 @@ class Table
 	}
 
 	/**
+	 * Set a lock provider
+	 * @param \pq\Gateway\Table\LockInterface $lock
+	 * @return \pq\Gateway\Table
+	 */
+	function setLock(Table\LockInterface $lock) {
+		$this->lock = $lock;
+		return $this;
+	}
+	
+	/**
+	 * Get any set lock provider
+	 * @return \pq\Gateway\Table\LockIntferace
+	 */
+	function getLock() {
+		return $this->lock;
+	}
+	
+	/**
 	 * Execute the query
 	 * @param \pq\Query\WriterInterface $query
 	 * @return mixed
@@ -262,9 +301,10 @@ class Table
 	 * @param array|string $order
 	 * @param int $limit
 	 * @param int $offset
+	 * @param string $lock
 	 * @return mixed
 	 */
-	function find(array $where = null, $order = null, $limit = 0, $offset = 0) {
+	function find(array $where = null, $order = null, $limit = 0, $offset = 0, $lock = null) {
 		$query = $this->getQueryWriter()->reset();
 		$query->write("SELECT * FROM", $this->conn->quoteName($this->name));
 		if ($where) {
@@ -276,7 +316,12 @@ class Table
 		if ($limit) {
 			$query->write("LIMIT", $limit);
 		}
-		$query->write("OFFSET", $offset);
+		if ($offset) {
+			$query->write("OFFSET", $offset);
+		}
+		if ($lock) {
+			$query->write("FOR", $lock);
+		}
 		return $this->execute($query);
 	}
 	
@@ -293,7 +338,7 @@ class Table
 		// select * from $this where $this->$foreignColumn = $foreign->$referencedColumn
 		
 		if (!isset($name)) {
-			$name = $this->getName();
+			$name = $foreign->getTable()->getName();
 		}
 		
 		if (!$foreign->getTable()->hasRelation($name, $this->getName())) {

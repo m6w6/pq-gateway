@@ -4,8 +4,9 @@ namespace pq\Query;
 
 /**
  * An executor of \pq\Query\Writer queries
+ * @codeCoverageIgnore
  */
-interface ExecutorInterface
+interface ExecutorInterface extends \SplSubject
 {
 	/**
 	 * Get the connection
@@ -27,4 +28,15 @@ interface ExecutorInterface
 	 * @return mixed the result of the callback
 	 */
 	function execute(WriterInterface $query, callable $callback);
+	
+	/**
+	 * @return WriterInterface
+	 */
+	function getQuery();
+	
+	/**
+	 * @return \pq\Result
+	 */
+	function getResult();
+	
 }

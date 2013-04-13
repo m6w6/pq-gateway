@@ -2,6 +2,9 @@
 
 namespace pq\Query;
 
+/**
+ * @codeCoverageIgnore
+ */
 interface ExpressibleInterface
 {
 	/**

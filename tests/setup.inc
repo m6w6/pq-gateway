@@ -42,3 +42,49 @@ SQL;
 spl_autoload_register(function($c) {
 	if (substr($c,0,3) == "pq\\") return require_once sprintf("%s/../lib/%s.php", __DIR__, strtr($c, "\\", "/"));
 });
+
+function executeInConcurrentTransaction(\pq\Query\ExecutorInterface $exec, $sql, array $params = null) {
+	$conn = $exec->getConnection();
+	$exec->setConnection(new pq\Connection(PQ_TEST_DSN));
+	$exec->execute(new \pq\Query\Writer($sql, $params), function(){});
+	$exec->setConnection($conn);
+}
+
+class QueryLogger implements \SplObserver
+{
+	protected $fp;
+	
+	function __construct($logfile = null) {
+		if (!isset($logfile)) {
+			$logfile = __DIR__."/query.log";
+		}
+		if (!$this->fp = @fopen($logfile, "a")) {
+			throw new \RuntimeException(error_get_last()["message"]);
+		}
+	}
+	
+	function __destruct() {
+		if (is_resource($this->fp)) {
+			fclose($this->fp);
+		}
+	}
+	
+	function update(\SplSubject $executor) {
+		$result = $executor->getResult();
+		if (isset($result)) {
+			fprintf($this->fp, "[%s] R %s\n", 
+				date_create()->format("Y-m-d H:i:s"),
+				json_encode([
+					"S" => $result->statusMessage, 
+					"N" => $result->numRows, 
+					"C" => $result->numCols,
+					"A" => $result->affectedRows
+				]));
+		} elseif (($query = $executor->getQuery())) {
+			fprintf($this->fp, "[%s] Q %s %% %s\n", 
+				date_create()->format("Y-m-d H:i:s"),
+				preg_replace("/\s+/", " ", $query), 
+				json_encode($query->getParams()));
+		}
+	}
+}

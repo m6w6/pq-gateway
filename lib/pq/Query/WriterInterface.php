@@ -4,6 +4,7 @@ namespace pq\Query;
 
 /**
  * A query writer which supports easily constructing queries for \pq\Connection::execParams()
+ * @codeCoverageIgnore
  */
 interface WriterInterface
 {

@@ -23,6 +23,7 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 		$this->conn->exec(PQ_TEST_DATA);
 		Table::$defaultConnection = $this->conn;
 		$this->table = new Table("test");
+		$this->table->getQueryExecutor()->attach(new \QueryLogger());
 	}
 
 	protected function tearDown() {
@@ -50,5 +51,60 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 	function testGetTable() {
 		$row = new Row($this->table);
 		$this->assertSame($this->table, $row->getTable());
+	}
+	
+	function testPessimisticLock() {
+		$this->table->setLock(new Table\PessimisticLock);
+		$txn = $this->table->getConnection()->startTransaction();
+		$row = $this->table->find(null, null, 1)->current();
+		$row->data = "foo";
+		$row->update();
+		$txn->commit();
+		$this->assertSame("foo", $row->data->get());
+	}
+	
+	function testPessimisticLockFail() {
+		$this->table->setLock(new Table\PessimisticLock);
+		$txn = $this->table->getConnection()->startTransaction();
+		$row = $this->table->find(null, null, 1)->current();
+		$row->data = "foo";
+		executeInConcurrentTransaction(
+			$this->table->getQueryExecutor(),
+			"UPDATE {$this->table->getName()} SET data='bar' WHERE id=\$1", 
+			array($row->id->get()));
+		$this->setExpectedException("\\UnexpectedValueException", "Row has already been modified");
+		$row->update();
+		$txn->commit();
+	}
+	
+	function testOptimisticLock() {
+		$this->table->setLock(new Table\OptimisticLock("counter"));
+		$row = $this->table->find(null, null, 1)->current();
+		$cnt = $row->counter->get();
+		$row->data = "foo";
+		$row->update();
+		$this->assertEquals("foo", $row->data->get());
+		$this->assertEquals($cnt +1, $row->counter->get());
+	}
+	
+	function testOptimisticLockFail() {
+		$this->table->setLock(new Table\OptimisticLock("counter"));
+		$row = $this->table->find(null, null, 1)->current();
+		$cnt = $row->counter->get();
+		$row->data = "foo";
+		executeInConcurrentTransaction(
+			$this->table->getQueryExecutor(), 
+			"UPDATE {$this->table->getName()} SET counter = 10 WHERE id=\$1", 
+			array($row->id->get()));
+		$this->setExpectedException("\\UnexpectedValueException", "No row updated");
+		$row->update();
+	}
+	
+	function testRef() {
+		foreach ($this->table->find() as $row) {
+			foreach ($row->reftest() as $ref) {
+				$this->assertEquals($row->id->get(), $ref->test->id->get());
+			}
+		}
 	}
 }

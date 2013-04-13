@@ -2,6 +2,8 @@
 
 namespace pq\Gateway;
 
+use \pq\Query\Expr as QueryExpr;
+
 class Row implements \JsonSerializable
 {
 	/**
@@ -94,6 +96,30 @@ class Row implements \JsonSerializable
 	}
 	
 	/**
+	 * Get all column/value pairs to possibly uniquely identify this row
+	 * @return array
+	 * @throws \OutOfBoundsException if any primary key column is not present in the row
+	 */
+	function getIdentity() {
+		$cols = array();
+		if (count($identity = $this->getTable()->getIdentity())) {
+			foreach ($identity as $col) {
+				if (!array_key_exists($col, $this->data)) {
+					throw new \OutOfBoundsException(
+						sprintf("Column '%s' does not exist in row of table '%s'",
+							$col, $this->getTable()->getName()
+						)
+					);
+				}
+				$cols[$col] = $this->data[$col];
+			}
+		} else {
+			$cols = $this->data;
+		}
+		return $cols;
+	}
+	
+	/**
 	 * Check whether the row contains modifications
 	 * @return boolean
 	 */
@@ -106,6 +132,10 @@ class Row implements \JsonSerializable
 		return false;
 	}
 	
+	/**
+	 * Refresh the rows data
+	 * @return \pq\Gateway\Row
+	 */
 	function refresh() {
 		$this->data = $this->table->find($this->criteria(), null, 1, 0)->current()->data;
 		$this->cell = array();
@@ -125,13 +155,21 @@ class Row implements \JsonSerializable
 	}
 	
 	/**
-	 * Transform data array to where criteria
+	 * Transform the row's identity to where criteria
 	 * @return array
 	 */
 	protected function criteria() {
 		$where = array();
-		foreach($this->data as $k => $v) {
-			$where["$k="] = $v;
+		foreach ($this->getIdentity() as $col => $val) {
+			if (isset($val)) {
+				$where["$col="] = $val;
+			} else {
+				$where["$col IS"] = new QueryExpr("NULL");
+			}
+		}
+		
+		if (($lock = $this->getTable()->getLock())) {
+			$lock->criteria($this, $where);
 		}
 		return $where;
 	}
@@ -210,7 +248,11 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function create() {
-		$this->data = $this->table->create($this->changes())->current()->data;
+		$rowset = $this->table->create($this->changes());
+		if (!count($rowset)) {
+			throw new \UnexpectedValueException("No row created");
+		}
+		$this->data = $rowset->current()->data;
 		$this->cell = array();
 		return $this;
 	}
@@ -220,7 +262,11 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function update() {
-		$this->data = $this->table->update($this->criteria(), $this->changes())->current()->data;
+		$rowset = $this->table->update($this->criteria(), $this->changes());
+		if (!count($rowset)) {
+			throw new \UnexpectedValueException("No row updated");
+		}
+		$this->data = $rowset->current()->data;
 		$this->cell = array();
 		return $this;
 	}
@@ -230,7 +276,11 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function delete() {
-		$this->data = $this->table->delete($this->criteria(), "*")->current()->data;
+		$rowset = $this->table->delete($this->criteria(), "*");
+		if (!count($rowset)) {
+			throw new \UnexpectedValueException("No row deleted");
+		}
+		$this->data = $rowset->current()->data;
 		return $this->prime();
 	}
 }

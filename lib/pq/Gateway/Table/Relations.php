@@ -30,17 +30,26 @@ order by
 	,att1.attnum
 SQL;
 
+/**
+ * A foreighn key implementation
+ */
 class Relations
 {
-	public $references;
+	/**
+	 * @var array
+	 */
+	protected $references;
 	
 	function __construct(Table $table) {
 		$cache = $table->getMetadataCache();
-		if (!($this->references = $cache->get("$table:references"))) {
-			$this->references = $table->getConnection()
-				->execParams(RELATION_SQL, array($table->getName()))
-				->map(array(0,1), array(2,3,4), \pq\Result::FETCH_OBJECT);
-			$cache->set("$table:references", $this->references);
+		if (!($this->references = $cache->get("$table#relations"))) {
+			$table->getQueryExecutor()->execute(
+				new \pq\Query\Writer(RELATION_SQL, array($table->getName())),
+				function($result) use($table, $cache) {
+					$this->references = $result->map(array(0,1), array(2,3,4), \pq\Result::FETCH_OBJECT);
+					$cache->set("$table#relations", $this->references);
+				}
+			);
 		}
 	}
 	

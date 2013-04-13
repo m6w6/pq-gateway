@@ -23,6 +23,7 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 		$this->conn->exec(PQ_TEST_DATA);
 		Table::$defaultConnection = $this->conn;
 		$this->table = new Table("test");
+		$this->table->getQueryExecutor()->attach(new \QueryLogger());
 	}
 
 	protected function tearDown() {

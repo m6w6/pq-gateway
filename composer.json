@@ -14,7 +14,10 @@
     "autoload": {
         "psr-0": {
             "pq\\Gateway": "lib",
-			"pq\\Query": "lib"
+												"pq\\Query": "lib"
         }
-    }
+    },
+				"suggest": {
+								"reactphp/promise": "1.0.*"
+				}
 }

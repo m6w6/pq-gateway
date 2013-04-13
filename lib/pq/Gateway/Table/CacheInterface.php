@@ -2,6 +2,9 @@
 
 namespace pq\Gateway\Table;
 
+/**
+ * @codeCoverageIgnore
+ */
 interface CacheInterface
 {
 	/**

@@ -23,6 +23,7 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 		$this->conn->exec(PQ_TEST_DATA);
 		Table::$defaultConnection = $this->conn;
 		$this->table = new Table("test");
+		$this->table->getQueryExecutor()->attach(new \QueryLogger());
 	}
 
 	protected function tearDown() {
@@ -107,7 +108,7 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	public function testDeleteFail() {
-		$this->setExpectedException("pq\\Exception");
+		$this->setExpectedException("Exception");
 		$rowset = new Rowset($this->table);
 		$rowset->append(new Row($this->table, array("xx" => 0)))->delete();
 	}
