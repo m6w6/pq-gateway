@@ -18,17 +18,14 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 
 	protected function setUp() {
 		$this->conn = new \pq\Connection(PQ_TEST_DSN);
-		$this->conn->exec(PQ_TEST_TABLE_CREATE);
-		$this->conn->exec(PQ_TEST_REFTABLE_CREATE);
-		$this->conn->exec(PQ_TEST_DATA);
+		$this->conn->exec(PQ_TEST_SETUP_SQL);
 		Table::$defaultConnection = $this->conn;
 		$this->table = new Table("test");
 		$this->table->getQueryExecutor()->attach(new \QueryLogger());
 	}
 
 	protected function tearDown() {
-		$this->conn->exec(PQ_TEST_REFTABLE_DROP);
-		$this->conn->exec(PQ_TEST_TABLE_DROP);
+		$this->conn->exec(PQ_TEST_TEARDOWN_SQL);
 	}
 	
 	public function testSetRowsetPrototype() {
@@ -70,14 +67,14 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 	public function testUpdate() {
 		$row = $this->table->create(array())->current();
 		$data = array(
-			"created" => "2013-03-03 03:03:03",
+			"created" => new \pq\DateTime("2013-03-03 03:03:03"),
 			"counter" => 2,
 			"number" => 2.2,
 			"data" => "this is a test",
 		);
 		$row = $this->table->update(array("id = " => $row->id), $data)->current();
 		$data = array("id" => $row->id->get()) + $data;
-		$this->assertSame(array_map(function($v){return strval($v);}, $data), $row->getData());
+		$this->assertEquals(array_map(function($v){return strval($v);}, $data), $row->getData());
 	}
 
 	public function testDelete() {
@@ -91,7 +88,7 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 		$this->assertCount(1, $rowset);
 		$this->assertEquals(array(
 			"id" => 2,
-			"created" => date_create("today")->format("Y-m-d H:i:s"),
+			"created" => new \pq\DateTime("today"),
 			"counter" => 0,
 			"number" => 0,
 			"data" => "today"

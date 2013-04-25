@@ -18,17 +18,14 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 
 	protected function setUp() {
 		$this->conn = new \pq\Connection(PQ_TEST_DSN);
-		$this->conn->exec(PQ_TEST_TABLE_CREATE);
-		$this->conn->exec(PQ_TEST_REFTABLE_CREATE);
-		$this->conn->exec(PQ_TEST_DATA);
+		$this->conn->exec(PQ_TEST_SETUP_SQL);
 		Table::$defaultConnection = $this->conn;
 		$this->table = new Table("test");
 		$this->table->getQueryExecutor()->attach(new \QueryLogger());
 	}
 
 	protected function tearDown() {
-		$this->conn->exec(PQ_TEST_REFTABLE_DROP);
-		$this->conn->exec(PQ_TEST_TABLE_DROP);
+		$this->conn->exec(PQ_TEST_TEARDOWN_SQL);
 	}
 
 	public function test__invoke() {
@@ -117,9 +114,9 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 		$json = sprintf('[{"id":"1","created":"%s","counter":"-1","number":"-1.1","data":"yesterday"}'
 			.',{"id":"2","created":"%s","counter":"0","number":"0","data":"today"}'
 			.',{"id":"3","created":"%s","counter":"1","number":"1.1","data":"tomorrow"}]',
-			date("Y-m-d H:i:s", strtotime("yesterday")),
-			date("Y-m-d H:i:s", strtotime("today")),
-			date("Y-m-d H:i:s", strtotime("tomorrow"))
+			new \pq\DateTime("yesterday"),
+			new \pq\DateTime("today"),
+			new \pq\DateTime("tomorrow")
 		);
 		$this->assertJsonStringEqualsJsonString($json, json_encode($this->table->find()));
 	}

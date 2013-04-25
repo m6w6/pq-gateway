@@ -18,17 +18,14 @@ class CellTest extends \PHPUnit_Framework_TestCase {
 
 	protected function setUp() {
 		$this->conn = new \pq\Connection(PQ_TEST_DSN);
-		$this->conn->exec(PQ_TEST_TABLE_CREATE);
-		$this->conn->exec(PQ_TEST_REFTABLE_CREATE);
-		$this->conn->exec(PQ_TEST_DATA);
+		$this->conn->exec(PQ_TEST_SETUP_SQL);
 		Table::$defaultConnection = $this->conn;
 		$this->table = new Table("test");
 		$this->table->getQueryExecutor()->attach(new \QueryLogger());
 	}
 
 	protected function tearDown() {
-		$this->conn->exec(PQ_TEST_REFTABLE_DROP);
-		$this->conn->exec(PQ_TEST_TABLE_DROP);
+		$this->conn->exec(PQ_TEST_TEARDOWN_SQL);
 	}
 
 	/**
