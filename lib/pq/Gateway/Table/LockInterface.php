@@ -5,7 +5,7 @@ namespace pq\Gateway\Table;
 use \pq\Gateway\Row;
 
 /**
- * Lazy row lock on update/delete
+ * Lazy row lock on update
  */
 interface LockInterface
 {
