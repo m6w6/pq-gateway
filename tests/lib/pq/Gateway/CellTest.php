@@ -50,4 +50,15 @@ class CellTest extends \PHPUnit_Framework_TestCase {
 			$this->assertEquals("$key + 123 || 'foobar' - now()", (string) $row->$key);
 		}
 	}
+	
+	public function testRef() {
+		$rows = $this->table->find(null, "id desc", 2);
+		$reft = new Table("reftest");
+		$refs = new Rowset($reft);
+		$refs->append($rows->seek(0)->current()->reftest()->current());
+		$refs->append($rows->seek(1)->current()->reftest()->current());
+		$refs->seek(0)->current()->test = $rows->seek(1)->current();
+		$refs->seek(1)->current()->test = $rows->seek(0)->current();
+		$refs->update();
+	}
 }

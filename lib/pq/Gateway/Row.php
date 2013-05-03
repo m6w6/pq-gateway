@@ -185,6 +185,18 @@ class Row implements \JsonSerializable
 	}
 	
 	/**
+	 * Cell accessor
+	 * @param string $p column name
+	 * @return \pq\Gateway\Cell
+	 */
+	protected function cell($p) {
+		if (!isset($this->cell[$p])) {
+			$this->cell[$p] = new Cell($this, $p, isset($this->data[$p]) ? $this->data[$p] : null);
+		}
+		return $this->cell[$p];
+	}
+	
+	/**
 	 * Get a cell or parent rows
 	 * @param string $p
 	 * @return \pq\Gateway\Cell|\pq\Gateway\Rowset
@@ -193,10 +205,7 @@ class Row implements \JsonSerializable
 		if ($this->table->hasRelation($p)) {
 			return $this->table->by($this, $p);
 		}
-		if (!isset($this->cell[$p])) {
-			$this->cell[$p] = new Cell($this, $p, isset($this->data[$p]) ? $this->data[$p] : null);
-		}
-		return $this->cell[$p];
+		return $this->cell($p);
 	}
 	
 	/**
@@ -205,7 +214,7 @@ class Row implements \JsonSerializable
 	 * @param mixed $v
 	 */
 	function __set($p, $v) {
-		$this->__get($p)->set($v);
+		$this->cell($p)->set($v);
 	}
 	
 	/**
