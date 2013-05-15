@@ -8,5 +8,9 @@ for [ext-pq](https://bitbucket.org/mike_php_net/ext-pq).
 
 ## ChangeLog
 
+### 1.1.0
+* Added support for one-dimensional arrays
+* Added pq\Gateway\Table\Attributes (type support for input parameters)
+
 ### 1.0.0
 * First stable release
