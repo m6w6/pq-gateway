@@ -54,6 +54,11 @@ class Table
 	protected $identity;
 	
 	/**
+	 * @var \pq\Gateway\Table\Attributes
+	 */
+	protected $attributes;
+	
+	/**
 	 * @var \pq\Gateway\Table\Relations
 	 */
 	protected $relations;
@@ -203,6 +208,13 @@ class Table
 			$this->identity = new Table\Identity($this);
 		}
 		return $this->identity;
+	}
+	
+	function getAttributes() {
+		if (!isset($this->attributes)) {
+			$this->attributes = new Table\Attributes($this);
+		}
+		return $this->attributes;
 	}
 	
 	/**
@@ -430,7 +442,7 @@ class Table
 			$params = array();
 			foreach ($data as $key => $val) {
 				$query->write($first ? "(" : ",", $key);
-				$params[] = $query->param($val);
+				$params[] = $query->param($val, $this->getAttributes()->getColumn($key)->type);
 				$first and $first = false;
 			}
 			$query->write(") VALUES (", $params, ")");
@@ -456,7 +468,8 @@ class Table
 		$query->write("UPDATE", $this->conn->quoteName($this->name));
 		$first = true;
 		foreach ($data as $key => $val) {
-			$query->write($first ? "SET" : ",", $key, "=", $query->param($val));
+			$query->write($first ? "SET" : ",", $key, "=", 
+				$query->param($val, $this->getAttributes()->getColumn($key)->type));
 			$first and $first = false;
 		}
 		$query->write("WHERE")->criteria($where);

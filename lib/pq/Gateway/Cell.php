@@ -4,7 +4,7 @@ namespace pq\Gateway;
 
 use \pq\Query\Expressible;
 
-class Cell extends Expressible
+class Cell extends Expressible implements \ArrayAccess
 {
 	/**
 	 * @var \pq\Gateway\Row
@@ -39,7 +39,7 @@ class Cell extends Expressible
 	 * @return bool
 	 */
 	function isDirty() {
-		return $this->dirty;
+		return (bool) $this->dirty;
 	}
 	
 	/**
@@ -73,4 +73,37 @@ class Cell extends Expressible
 		return $this;
 	}
 	
+	function offsetGet($o) {
+		if (isset($this->data) && !is_array($this->data)) {
+			throw new \UnexpectedValueException("Cell data is not an array");
+		}
+		return $this->data[$o];
+	}
+
+	function offsetSet($o, $v) {
+		if (isset($this->data) && !is_array($this->data)) {
+			throw new \UnexpectedValueException("Cell data is not an array");
+		}
+		if (isset($o)) {
+			$this->data[$o] = $v;
+		} else {
+			$this->data[] = $v;
+		}
+		$this->dirty = true;
+	}
+
+	function offsetExists($o) {
+		if (isset($this->data) && !is_array($this->data)) {
+			throw new \UnexpectedValueException("Cell data is not an array");
+		}
+		return isset($this->data[$o]);
+	}
+
+	function offsetUnset($o) {
+		if (isset($this->data) && !is_array($this->data)) {
+			throw new \UnexpectedValueException("Cell data is not an array");
+		}
+		unset($this->data[$o]);
+		$this->dirty = true;
+	}
 }

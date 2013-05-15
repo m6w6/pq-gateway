@@ -34,7 +34,7 @@ class CellTest extends \PHPUnit_Framework_TestCase {
 	public function testBasic() {
 		$row = $this->table->find(null, "id desc", 1)->current();
 		foreach ($row->getData() as $key => $val) {
-			$this->assertEquals($val, (string) $row->$key);
+			$this->assertEquals($val, $row->$key->get());
 			$this->assertFalse($row->$key->isExpr());
 			$this->assertFalse($row->$key->isDirty());
 			$this->assertSame($val, $row->$key->get());
@@ -60,5 +60,67 @@ class CellTest extends \PHPUnit_Framework_TestCase {
 		$refs->seek(0)->current()->test = $rows->seek(1)->current();
 		$refs->seek(1)->current()->test = $rows->seek(0)->current();
 		$refs->update();
+	}
+	
+	public function testArray() {
+		$row = $this->table->find(["id="=>1])->current();
+		$this->assertEquals([-1,0,1], $row->list->get());
+		$row->list[] = 4;
+		$row->list[2] = null;
+		$row->update();
+		$this->assertEquals([-1,0,null,4], $row->list->get());
+	}
+	
+	public function testMultiArray() {
+		$row = $this->table->find(["id="=>2])->current();
+		$this->assertEquals([0,1,2], $row->list->get());
+		$row->list = [$row->list->get()];
+		$row->update();
+		$this->assertEquals([[0,1,2]], $row->list->get());
+		$this->setExpectedException("PHPUnit_Framework_Error_Notice", "Indirect modification of overloaded element of pq\Gateway\Cell has no effect");
+		$row->list[0][0] = -1;
+	}
+		
+	public function testHstore() {
+		$this->conn->setConverter(new Hstore(new \pq\Types($this->conn)));
+		$row = $this->table->find(["id="=>3])->current();
+		$this->assertEquals(null, $row->prop->get());
+		$data = array("foo" => "bar", "a" => 1, "b" => 2);
+		$row->prop = $data;
+		$row->update();
+		$this->assertEquals($data, $row->prop->get());
+		$row->prop["a"] = null;
+		$row->update();
+		$data["a"] = null;
+		$this->assertEquals($data, $row->prop->get());
+		unset($data["a"], $row->prop["a"]);
+		$row->update();
+		$this->assertEquals($data, $row->prop->get());
+	}	
+}
+
+class Hstore implements \pq\ConverterInterface
+{
+	protected $types;
+	function __construct(\pq\Types $types) {
+		$this->types = $types;
+	}
+	function convertTypes() {
+		return [$this->types["hstore"]->oid];
+	}
+	function convertFromString($string) {
+		return eval("return [$string];");
+	}
+	function convertToString($data) {
+		$string = "";
+		foreach ($data as $k => $v) {
+			$string .= "\"".addslashes($k)."\"=>";
+			if (isset($v)) {
+				$string .= "\"".addslashes($v)."\",";
+			} else {
+				$string .= "NULL,";
+			}
+		}
+		return $string;
 	}
 }

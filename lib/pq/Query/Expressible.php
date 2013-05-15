@@ -63,10 +63,12 @@ class Expressible implements ExpressibleInterface
 		} elseif (!isset($op) && is_numeric($data)) {
 			$this->data->add(new Expr("+ $data"));
 		} else {
-			$data = $this->row->getTable()->getConnection()->quote($data);
+			if (!is_array($data)) {
+				$data = $this->row->getTable()->getConnection()->quote($data);
+			}
 			$this->data->add(new Expr("%s %s", isset($op) ? $op : "||", $data));
 		}
 		
 		return $this;
-	}		
+	}
 }

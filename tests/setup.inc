@@ -3,13 +3,17 @@
 const PQ_TEST_DSN = "";
 
 const PQ_TEST_SETUP_SQL = <<<SQL
+	create extension if not exists hstore;
+	
 	drop table if exists test cascade;
 	create table test (
 		id serial primary key, 
 		created timestamp, 
 		counter int, 
 		number decimal, 
-		data text
+		data text,
+		list int[],
+		prop hstore
 	);
 	
 	drop table if exists reftest cascade;
@@ -18,9 +22,9 @@ const PQ_TEST_SETUP_SQL = <<<SQL
 		another_test_id integer not null references test on delete cascade
 	);
 	
-	insert into test values (default, 'yesterday', -1, -1.1, 'yesterday');
-	insert into test values (default, 'today', 0, 0, 'today');
-	insert into test values (default, 'tomorrow', 1, 1.1, 'tomorrow');
+	insert into test values (default, 'yesterday', -1, -1.1, 'yesterday', '{-1,0,1}');
+	insert into test values (default, 'today', 0, 0, 'today', '{0,1,2}');
+	insert into test values (default, 'tomorrow', 1, 1.1, 'tomorrow', '{1,2,3}');
 	
 	insert into reftest values (1,3);
 	insert into reftest values (2,2);

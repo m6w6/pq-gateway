@@ -38,7 +38,9 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 				"created" => new \pq\DateTime("tomorrow"),
 				"counter" => "1",
 				"number" => "1.1",
-				"data" => "tomorrow"
+				"data" => "tomorrow",
+				"list" => array(1,2,3),
+				"prop" => null
 			),
 			$row->getData()
 		);

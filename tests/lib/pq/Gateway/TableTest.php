@@ -71,10 +71,12 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 			"counter" => 2,
 			"number" => 2.2,
 			"data" => "this is a test",
+			"list" => array(3,2,1),
+			"prop" => null
 		);
 		$row = $this->table->update(array("id = " => $row->id), $data)->current();
 		$data = array("id" => $row->id->get()) + $data;
-		$this->assertEquals(array_map(function($v){return strval($v);}, $data), $row->getData());
+		$this->assertEquals($data, $row->getData());
 	}
 
 	public function testDelete() {
@@ -91,7 +93,9 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 			"created" => new \pq\DateTime("today"),
 			"counter" => 0,
 			"number" => 0,
-			"data" => "today"
+			"data" => "today",
+			"list" => array(0,1,2),
+			"prop" => null
 		), $rowset->current()->getData());
 	}
 }

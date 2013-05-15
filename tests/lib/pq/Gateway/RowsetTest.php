@@ -71,7 +71,7 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	public function testCreateFail() {
-		$this->setExpectedException("\\pq\\Exception");
+		$this->setExpectedException("\\OutOfBoundsException");
 		$rowset = new Rowset($this->table);
 		$rowset->append(new Row($this->table, array("foo" => "bar"), true));
 		$rowset->create();
@@ -111,9 +111,9 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	public function testJsonSerialize() {
-		$json = sprintf('[{"id":"1","created":"%s","counter":"-1","number":"-1.1","data":"yesterday"}'
-			.',{"id":"2","created":"%s","counter":"0","number":"0","data":"today"}'
-			.',{"id":"3","created":"%s","counter":"1","number":"1.1","data":"tomorrow"}]',
+		$json = sprintf('[{"id":"1","created":"%s","counter":"-1","number":"-1.1","data":"yesterday","list":[-1,0,1],"prop":null}'
+			.',{"id":"2","created":"%s","counter":"0","number":"0","data":"today","list":[0,1,2],"prop":null}'
+			.',{"id":"3","created":"%s","counter":"1","number":"1.1","data":"tomorrow","list":[1,2,3],"prop":null}]',
 			new \pq\DateTime("yesterday"),
 			new \pq\DateTime("today"),
 			new \pq\DateTime("tomorrow")
@@ -154,5 +154,15 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 		$this->assertCount(0, $rowset3);
 		$this->assertSame(array(), $rowset3->getRows());
 		$this->assertCount(1, $rowset->filter(function($row) { return $row->id->get() == 1; }));
+	}
+	
+	public function testApplyAppend() {
+		$rowset1 = $this->table->find(null, null, 1);
+		$rowset2 = $this->table->find(null, null, 1, 1);
+		$this->assertCount(1, $rowset1);
+		$this->assertCount(1, $rowset2);
+		$rowset2->apply(array($rowset1, "append"));
+		$this->assertCount(1, $rowset2);
+		$this->assertCount(2, $rowset1);
 	}
 }
