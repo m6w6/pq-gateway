@@ -6,11 +6,15 @@ use \pq\Gateway\Table;
 
 const RELATION_SQL = <<<SQL
 select
-	 substring(att1.attname from '^.*(?=_'||att2.attname||'$)') as "id"
-	,cl1.relname                                                as "foreignTable"
-    ,att1.attname                                               as "foreignColumn"
-	,cl2.relname                                                as "referencedTable"
-    ,att2.attname                                               as "referencedColumn"
+	 case att1.attname
+	 when att2.attname
+		then att1.attname
+		else substring(att1.attname from '^.*(?=_'||att2.attname||'$)')
+	 end          as "id"
+	,cl1.relname  as "foreignTable"
+	,att1.attname as "foreignColumn"
+	,cl2.relname  as "referencedTable"
+	,att2.attname as "referencedColumn"
 from
      pg_constraint co
     ,pg_class      cl1
