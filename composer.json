@@ -1,5 +1,5 @@
 {
-	"name": "mike_php_net/pq-gateway",
+	"name": "m6w6/pq-gateway",
 	"type": "library",
 	"description": "Table/row gateway for ext-pq",
 	"keywords": ["postgres", "orm", "gateway", "pq"],
