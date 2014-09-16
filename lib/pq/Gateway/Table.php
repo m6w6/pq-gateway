@@ -6,7 +6,7 @@ use \pq\Query\Expr as QueryExpr;
 use \pq\Query\Writer as QueryWriter;
 use \pq\Query\Executor as QueryExecutor;
 
-class Table
+class Table implements \SplSubject
 {
 	/**
 	 * @var \pq\Connection
@@ -69,9 +69,9 @@ class Table
 	protected $metadataCache;
 	
 	/**
-	 * @var \pq\Gateway\Table\LockInterface
+	 * @var \SplObjectStorage
 	 */
-	protected $lock;
+	protected $observers;
 	
 	/**
 	 * @param string $table
@@ -101,6 +101,7 @@ class Table
 			throw new \InvalidArgumentException("Table must have a name");
 		}
 		$this->conn = $conn ?: static::$defaultConnection ?: new \pq\Connection;
+		$this->observers = new \SplObjectStorage;
 	}
 	
 	/**
@@ -266,21 +267,32 @@ class Table
 	}
 
 	/**
-	 * Set a lock provider
-	 * @param \pq\Gateway\Table\LockInterface $lock
+	 * Attach an observer
+	 * @param \SplObserver
 	 * @return \pq\Gateway\Table
 	 */
-	function setLock(Table\LockInterface $lock) {
-		$this->lock = $lock;
+	function attach(\SplObserver $observer) {
+		$this->observers->attach($observer);
 		return $this;
 	}
 	
 	/**
-	 * Get any set lock provider
-	 * @return \pq\Gateway\Table\LockIntferace
+	 * Detach an observer
+	 * @param \SplObserver
+	 * @return \pq\Gateway\Table
 	 */
-	function getLock() {
-		return $this->lock;
+	function detach(\SplObserver $observer) {
+		$this->observers->attach($observer);
+		return $this;
+	}
+
+	/**
+	 * Implements \SplSubject
+	 */
+	function notify(\pq\Gateway\Row $row = null, $event = null, array &$where = null) {
+		foreach ($this->observers as $observer) {
+			$observer->update($this, $row, $event, $where);
+		}
 	}
 	
 	/**

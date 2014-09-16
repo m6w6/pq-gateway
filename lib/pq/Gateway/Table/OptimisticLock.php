@@ -7,7 +7,7 @@ use \pq\Gateway\Row;
 /**
  * An optimistic row lock implementation using a versioning column
  */
-class OptimisticLock implements LockInterface
+class OptimisticLock implements \SplObserver
 {
 	/**
 	 * The name of the versioning column
@@ -23,12 +23,15 @@ class OptimisticLock implements LockInterface
 	}
 	
 	/**
-	 * @inheritdoc
+	 * @param \pq\Gateway\Table $table
 	 * @param \pq\Gateway\Row $row
+	 * @param string $event create/update/delete
 	 * @param array $where reference to the criteria
 	 */
-	function onUpdate(Row $row, array &$where) {
-		$where["{$this->column}="] = $row->getData()[$this->column];
-		$row->{$this->column}->mod(+1);
+	function update(\SplSubject $table, Row $row = null, $event = null, array &$where = null) {
+		if ($event === "update") {
+			$where["{$this->column}="] = $row->getData()[$this->column];
+			$row->{$this->column}->mod(+1);
+		}
 	}
 }

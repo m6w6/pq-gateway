@@ -53,7 +53,7 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	function testPessimisticLock() {
-		$this->table->setLock(new Table\PessimisticLock);
+		$this->table->attach(new Table\PessimisticLock);
 		$txn = $this->table->getConnection()->startTransaction();
 		$row = $this->table->find(null, null, 1)->current();
 		$row->data = "foo";
@@ -63,7 +63,7 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	function testPessimisticLockFail() {
-		$this->table->setLock(new Table\PessimisticLock);
+		$this->table->attach(new Table\PessimisticLock);
 		$txn = $this->table->getConnection()->startTransaction();
 		$row = $this->table->find(null, null, 1)->current();
 		$row->data = "foo";
@@ -77,7 +77,7 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	function testOptimisticLock() {
-		$this->table->setLock(new Table\OptimisticLock("counter"));
+		$this->table->attach(new Table\OptimisticLock("counter"));
 		$row = $this->table->find(null, null, 1)->current();
 		$cnt = $row->counter->get();
 		$row->data = "foo";
@@ -87,7 +87,7 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	function testOptimisticLockFail() {
-		$this->table->setLock(new Table\OptimisticLock("counter"));
+		$this->table->attach(new Table\OptimisticLock("counter"));
 		$row = $this->table->find(null, null, 1)->current();
 		$row->data = "foo";
 		executeInConcurrentTransaction(

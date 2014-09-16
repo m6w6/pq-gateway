@@ -253,6 +253,7 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function create() {
+		$this->table->notify($this, "create");
 		$rowset = $this->table->create($this->changes());
 		if (!count($rowset)) {
 			throw new \UnexpectedValueException("No row created");
@@ -267,11 +268,9 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function update() {
-		$criteria = $this->criteria();
-		if (($lock = $this->getTable()->getLock())) {
-			$lock->onUpdate($this, $criteria);
-		}
-		$rowset = $this->table->update($criteria, $this->changes());
+		$where = $this->criteria();
+		$this->table->notify($this, "update", $where);
+		$rowset = $this->table->update($where, $this->changes());
 		if (!count($rowset)) {
 			throw new \UnexpectedValueException("No row updated");
 		}
@@ -285,6 +284,7 @@ class Row implements \JsonSerializable
 	 * @return \pq\Gateway\Row
 	 */
 	function delete() {
+		$this->table->notify($this, "delete");
 		$rowset = $this->table->delete($this->criteria(), "*");
 		if (!count($rowset)) {
 			throw new \UnexpectedValueException("No row deleted");

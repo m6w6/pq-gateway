@@ -7,29 +7,23 @@ use \pq\Gateway\Row;
 /**
  * A pessimistic row lock implementation using an additional SELECT FOR UPDATE
  */
-class PessimisticLock implements LockInterface
+class PessimisticLock implements \SplObserver
 {
 	/**
-	 * @inheritdoc
+	 * @param \pq\Gateway\Table $table
 	 * @param \pq\Gateway\Row $row
-	 * @param array $ignore
+	 * @param string $event create/update/delete
+	 * @param array $where reference to the criteria
 	 * @throws \UnexpectedValueException if the row has already been modified
 	 */
-	function onUpdate(Row $row, array &$ignore) {
-		$where = array();
-		foreach ($row->getIdentity() as $col => $val) {
-			if (isset($val)) {
-				$where["$col="] = $val;
-			} else {
-				$where["$col IS"] = new QueryExpr("NULL");
+	function update(\SplSubject $table, Row $row = null, $event = null, array &$where = null) {
+		if ($event === "update") {
+			if (1 != count($rowset = $table->find($where, null, 0, 0, "update nowait"))) {
+				throw new \UnexpectedValueException("Failed to select a single row");
 			}
-		}
-		
-		if (1 != count($rowset = $row->getTable()->find($where, null, 0, 0, "update nowait"))) {
-			throw new \UnexpectedValueException("Failed to select a single row");
-		}
-		if ($rowset->current()->getData() != $row->getData()) {
-			throw new \UnexpectedValueException("Row has already been modified");
+			if ($rowset->current()->getData() != $row->getData()) {
+				throw new \UnexpectedValueException("Row has already been modified");
+			}
 		}
 	}
 }
