@@ -77,7 +77,8 @@ class CellTest extends \PHPUnit_Framework_TestCase {
 		$row->list = [$row->list->get()];
 		$row->update();
 		$this->assertEquals([[0,1,2]], $row->list->get());
-		$this->setExpectedException("PHPUnit_Framework_Error_Notice", "Indirect modification of overloaded element of pq\Gateway\Cell has no effect");
+		$this->setExpectedException("PHPUnit_Framework_Error_Notice", 
+			"Indirect modification of overloaded element of pq\Gateway\Cell has no effect");
 		$row->list[0][0] = -1;
 	}
 		
@@ -99,19 +100,19 @@ class CellTest extends \PHPUnit_Framework_TestCase {
 	}	
 }
 
-class Hstore implements \pq\ConverterInterface
+class Hstore implements \pq\Converter
 {
 	protected $types;
 	function __construct(\pq\Types $types) {
-		$this->types = $types;
+		$this->types = $types["hstore"]->oid;
 	}
 	function convertTypes() {
-		return [$this->types["hstore"]->oid];
+		return [$this->types];
 	}
-	function convertFromString($string) {
+	function convertFromString($string, $type) {
 		return eval("return [$string];");
 	}
-	function convertToString($data) {
+	function convertToString($data, $type) {
 		$string = "";
 		foreach ($data as $k => $v) {
 			$string .= "\"".addslashes($k)."\"=>";

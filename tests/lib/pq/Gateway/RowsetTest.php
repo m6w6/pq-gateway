@@ -111,12 +111,16 @@ class RowsetTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	public function testJsonSerialize() {
-		$json = sprintf('[{"id":"1","created":"%s","counter":"-1","number":"-1.1","data":"yesterday","list":[-1,0,1],"prop":null}'
-			.',{"id":"2","created":"%s","counter":"0","number":"0","data":"today","list":[0,1,2],"prop":null}'
-			.',{"id":"3","created":"%s","counter":"1","number":"1.1","data":"tomorrow","list":[1,2,3],"prop":null}]',
-			new \pq\DateTime("yesterday"),
-			new \pq\DateTime("today"),
-			new \pq\DateTime("tomorrow")
+		$yday = new \pq\DateTime("yesterday");
+		$tday = new \pq\DateTime("today");
+		$tmrw = new \pq\DateTime("tomorrow");
+		
+		$yday->format = $tday->format = $tmrw->format = "Y-m-d H:i:s.u";
+		
+		$json = sprintf('[{"id":1,"created":"%s","counter":-1,"number":-1.1,"data":"yesterday","list":[-1,0,1],"prop":null}'
+			.',{"id":2,"created":"%s","counter":0,"number":0,"data":"today","list":[0,1,2],"prop":null}'
+			.',{"id":3,"created":"%s","counter":1,"number":1.1,"data":"tomorrow","list":[1,2,3],"prop":null}]',
+			$yday, $tday, $tmrw
 		);
 		$this->assertJsonStringEqualsJsonString($json, json_encode($this->table->find()));
 	}

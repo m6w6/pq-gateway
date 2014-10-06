@@ -30,4 +30,18 @@ interface CacheInterface
 	 * @return \pq\Gateway\Table\CacheInterface
 	 */
 	function del($key);
+	
+	/**
+	 * Lock an item
+	 * @param string $key
+	 * @return \pq\Gateway\Table\CacheInterface
+	 */
+	function lock($key);
+	
+	/**
+	 * Unlock an item
+	 * @param string $key
+	 * @return \pq\Gateway\Table\CacheInterface
+	 */
+	function unlock($key);
 }

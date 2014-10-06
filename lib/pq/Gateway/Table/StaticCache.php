@@ -48,4 +48,24 @@ class StaticCache implements CacheInterface
 		unset(static::$cache[$key]);
 		return $this;
 	}
+	
+	/**
+	 * @inheritdoc
+	 * @param string $key
+	 * @return \pq\Gateway\Table\StaticCache
+	 */
+	function lock($key) {
+		/* no possible concurrency */
+		return $this;
+	}
+	
+	/**
+	 * @inheritdoc
+	 * @param string $key
+	 * @return \pq\Gateway\Table\StaticCache
+	 */
+	function unlock($key) {
+		/* no possible concurrency */
+		return $this;
+	}
 }
