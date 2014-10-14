@@ -100,8 +100,8 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 	
 	function testRef() {
 		foreach ($this->table->find() as $row) {
-			foreach ($row->reftest() as $ref) {
-				$this->assertEquals($row->id->get(), $ref->test->current()->id->get());
+			foreach ($row->allOf("reftest") as $ref) {
+				$this->assertEquals($row->id->get(), $ref->ofWhich("test")->current()->id->get());
 			}
 		}
 	}

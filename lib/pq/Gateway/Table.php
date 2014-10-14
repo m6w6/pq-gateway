@@ -109,13 +109,12 @@ class Table implements \SplSubject
 	 * @return string
 	 */
 	function __toString() {
-		return sprintf("postgresql://%s:%s@%s:%d/%s?%s#%s",
+		return (string) sprintf("postgresql://%s:%s@%s:%d/%s#%s",
 			$this->conn->user,
 			$this->conn->pass,
 			$this->conn->host,
 			$this->conn->port,
 			$this->conn->db,
-			$this->conn->options,
 			$this->getName()
 		);
 	}
@@ -211,6 +210,10 @@ class Table implements \SplSubject
 		return $this->identity;
 	}
 	
+	/**
+	 * Get the table attribute definition (column list)
+	 * @return \pq\Table\Attributes
+	 */
 	function getAttributes() {
 		if (!isset($this->attributes)) {
 			$this->attributes = new Table\Attributes($this);
@@ -220,36 +223,23 @@ class Table implements \SplSubject
 	
 	/**
 	 * Get foreign key relations
-	 * @param string $to fkey
-	 * @return \pq\Gateway\Table\Relations|stdClass
+	 * @return \pq\Gateway\Table\Relations
 	 */
-	function getRelations($to = null) {
+	function getRelations() {
 		if (!isset($this->relations)) {
 			$this->relations = new Table\Relations($this);
-		}
-		if (isset($to)) {
-			if (!isset($this->relations->$to)) {
-				return null;
-			}
-			return $this->relations->$to;
 		}
 		return $this->relations;
 	}
 	
 	/**
-	 * Check whether a certain relation exists
-	 * @param string $name
+	 * Get a foreign key relation
 	 * @param string $table
-	 * @return bool
+	 * @param string $ref
+	 * @return \pq\Gateway\Table\Reference
 	 */
-	function hasRelation($name, $table = null) {
-		if (!($rel = $this->getRelations($name))) {
-			return false;
-		}
-		if (!isset($table)) {
-			return true;
-		}
-		return isset($rel->$table);
+	function getRelation($table, $ref = null) {
+		return $this->getRelations()->getReference($table, $ref);
 	}
 	
 	/**
@@ -357,23 +347,18 @@ class Table implements \SplSubject
 	/**
 	 * Get the child rows of a row by foreign key
 	 * @param \pq\Gateway\Row $foreign
-	 * @param string $name optional fkey name
+	 * @param string $ref optional fkey name
 	 * @param string $order
 	 * @param int $limit
 	 * @param int $offset
 	 * @return mixed
 	 */
-	function of(Row $foreign, $name = null, $order = null, $limit = 0, $offset = 0) {
+	function of(Row $foreign, $ref = null, $order = null, $limit = 0, $offset = 0) {
 		// select * from $this where $this->$foreignColumn = $foreign->$referencedColumn
 		
-		if (!isset($name)) {
-			$name = $foreign->getTable()->getName();
-		}
-		
-		if (!$foreign->getTable()->hasRelation($name, $this->getName())) {
+		if (!($rel = $this->getRelation($foreign->getTable()->getName(), $ref))) {
 			return $this->onResult(null);
 		}
-		$rel = $foreign->getTable()->getRelations($name)->{$this->getName()};
 		
 		return $this->find(
 			array($rel->foreignColumn . "=" => $foreign->{$rel->referencedColumn}),
@@ -383,24 +368,19 @@ class Table implements \SplSubject
 	
 	/**
 	 * Get the parent rows of a row by foreign key
-	 * @param \pq\Gateway\Row $me
-	 * @param string $foreign
-	 * @param string $order
-	 * @param int $limit
-	 * @param int $offset
+	 * @param \pq\Gateway\Row $foreign
+	 * @param string $ref
 	 * @return mixed
 	 */
-	function by(Row $me, $foreign, $order = null, $limit = 0, $offset = 0) {
-		// select * from $foreign where $foreign->$referencedColumn = $me->$foreignColumn
+	function by(Row $foreign, $ref = null) {
+		// select * from $this where $this->$referencedColumn = $me->$foreignColumn
 		
-		if (!$this->hasRelation($foreign, $this->getName())) {
+		if (!($rel = $foreign->getTable()->getRelation($this->getName(), $ref))) {
 			return $this->onResult(null);
 		}
-		$rel = $this->getRelations($foreign)->{$this->getName()};
 		
-		return static::resolve($rel->referencedTable)->find(
-			array($rel->referencedColumn . "=" => $me->{$rel->foreignColumn}),
-			$order, $limit, $offset
+		return $this->find(
+			array($rel->referencedColumn . "=" => $foreign->{$rel->foreignColumn})
 		);
 	}
 	
@@ -418,6 +398,9 @@ class Table implements \SplSubject
 		$query = $this->getQueryWriter()->reset();
 		$query->write("SELECT", "$qthis.*", "FROM", $qthis);
 		foreach ($relations as $relation) {
+			if (!($relation instanceof Table\Reference)) {
+				$relation = static::resolve($relation)->getRelation($this->getName());
+			}
 			$query->write("JOIN", $relation->foreignTable)->write("ON")->criteria(
 				array(
 					"{$relation->referencedTable}.{$relation->referencedColumn}=" => 

@@ -85,8 +85,7 @@ class TableTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	public function testWith() {
-		$relation = $this->table->getRelations("test")->reftest;
-		$rowset = $this->table->with([$relation], array("another_test_id=" => 2));
+		$rowset = $this->table->with(["reftest"], array("another_test_id=" => 2));
 		$this->assertCount(1, $rowset);
 		$this->assertEquals(array(
 			"id" => 2,

@@ -17,7 +17,7 @@ const ATTRIBUTES_SQL = <<<SQL
 	and   attnum   > 0
 SQL;
 
-class Attributes
+class Attributes implements \IteratorAggregate
 {
 	/**
 	 * @var array
@@ -29,14 +29,14 @@ class Attributes
 	 */
 	function __construct(Table $table) {
 		$cache = $table->getMetadataCache();
-		if (!($this->columns = $cache->get("$table#attributes"))) {
+		if (!($this->columns = $cache->get("$table:attributes"))) {
 			$table->getQueryExecutor()->execute(
 				new \pq\Query\Writer(ATTRIBUTES_SQL, array($table->getName())), 
 				function($result) use($table, $cache) {
 					foreach ($result->fetchAll(\pq\Result::FETCH_OBJECT) as $c) {
 						$this->columns[$c->index] = $this->columns[$c->name] = $c;
 					}
-					$cache->set("$table#attributes", $this->columns);
+					$cache->set("$table:attributes", $this->columns);
 				}
 			);
 		}
@@ -68,5 +68,13 @@ class Attributes
 			throw new \OutOfBoundsException("Unknown column $c");
 		}
 		return $this->columns[$c];
+	}
+	
+	/**
+	 * Implements \IteratorAggregate
+	 * @return \ArrayIterator
+	 */
+	function getIterator() {
+		return new \ArrayIterator($this->columns);
 	}
 }

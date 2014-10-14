@@ -33,12 +33,12 @@ class Identity implements \Countable, \IteratorAggregate
 	 */
 	function __construct(Table $table) {
 		$cache = $table->getMetadataCache();
-		if (!($this->columns = $cache->get("$table#identity"))) {
+		if (!($this->columns = $cache->get("$table:identity"))) {
 			$table->getQueryExecutor()->execute(
 				new \pq\Query\Writer(IDENTITY_SQL, array($table->getName())), 
 				function($result) use($table, $cache) {
 					$this->columns = array_map("current", $result->fetchAll(\pq\Result::FETCH_ARRAY));
-					$cache->set("$table#identity", $this->columns);
+					$cache->set("$table:identity", $this->columns);
 				}
 			);
 		}

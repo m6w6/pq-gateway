@@ -197,14 +197,11 @@ class Row implements \JsonSerializable
 	}
 	
 	/**
-	 * Get a cell or parent rows
+	 * Get a cell
 	 * @param string $p
-	 * @return \pq\Gateway\Cell|\pq\Gateway\Rowset
+	 * @return \pq\Gateway\Cell
 	 */
 	function __get($p) {
-		if ($this->table->hasRelation($p)) {
-			return $this->table->by($this, $p);
-		}
 		return $this->cell($p);
 	}
 	
@@ -236,16 +233,39 @@ class Row implements \JsonSerializable
 	}
 	
 	/**
-	 * Get child rows of this row by foreign key
-	 * @see \pq\Gateway\Table::of()
-	 * @param string $foreign
-	 * @param array $args [order, limit, offset]
+	 * Get the parent row
+	 * @see \pq\Gateway\Table::by()
+	 * @param mixed $foreign table (name)
+	 * @param string $ref
 	 * @return \pq\Gateway\Rowset
 	 */
-	function __call($foreign, array $args) {
-		array_unshift($args, $this);
-		$table = forward_static_call(array(get_class($this->getTable()), "resolve"), $foreign);
-		return call_user_func_array(array($table, "of"), $args);
+	function ofWhich($foreign, $ref = null) {
+		if (!($foreign instanceof Table)) {
+			$foreign = forward_static_call(
+				[get_class($this->getTable()), "resolve"], 
+				$foreign
+			);
+		}
+		return $foreign->by($this, $ref);
+	}
+	
+	/**
+	 * Get child rows of this row by foreign key
+	 * @see \pq\Gateway\Table::of()
+	 * @param mixed $foreign table (name)
+	 * @param string $order
+	 * @param int $limit
+	 * @param int $offset
+	 * @return \pq\Gateway\Rowset
+	 */
+	function allOf($foreign, $ref = null, $order = null, $limit = 0, $offset = 0) {
+		if (!($foreign instanceof Table)) {
+			$foreign = forward_static_call(
+				[get_class($this->getTable()), "resolve"], 
+				$foreign
+			);
+		}
+		return $foreign->of($this, $ref, $order, $limit, $offset);
 	}
 	
 	/**
