@@ -5,11 +5,21 @@ namespace pq\Query;
 class Expressible implements ExpressibleInterface
 {
 	/**
+	 * @var string
+	 */
+	protected $name;
+	
+	/**
 	 * @var mixed
 	 */
 	protected $data;
 	
-	function __construct($data) {
+	/**
+	 * @param string $name
+	 * @param mixed $data
+	 */
+	function __construct($name, $data) {
+		$this->name = $name;
 		$this->data = $data;
 	}
 	
@@ -63,9 +73,6 @@ class Expressible implements ExpressibleInterface
 		} elseif (!isset($op) && is_numeric($data)) {
 			$this->data->add(new Expr("+ $data"));
 		} else {
-			if (!is_array($data)) {
-				$data = $this->row->getTable()->getConnection()->quote($data);
-			}
 			$this->data->add(new Expr("%s %s", isset($op) ? $op : "||", $data));
 		}
 		

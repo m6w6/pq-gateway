@@ -12,11 +12,6 @@ class Cell extends Expressible implements \ArrayAccess
 	protected $row;
 	
 	/**
-	 * @var string
-	 */
-	protected $name;
-	
-	/**
 	 * @var bool
 	 */
 	protected $dirty;
@@ -28,9 +23,8 @@ class Cell extends Expressible implements \ArrayAccess
 	 * @param bool $dirty
 	 */
 	function __construct(Row $row, $name, $data, $dirty = false) {
-		parent::__construct($data);
+		parent::__construct($name, $data);
 		$this->row = $row;
-		$this->name = $name;
 		$this->dirty = $dirty;
 	}
 	
@@ -68,6 +62,9 @@ class Cell extends Expressible implements \ArrayAccess
 	 * @return \pq\Gateway\Cell
 	 */
 	function mod($data, $op = null) {
+		if (is_string($data)) {
+			$data = $this->row->getTable()->getConnection()->quote($data);
+		}
 		parent::mod($data, $op);
 		$this->dirty = true;
 		return $this;
