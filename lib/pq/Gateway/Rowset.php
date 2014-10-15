@@ -99,12 +99,14 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	
 	/**
 	 * Create all rows of this rowset
-	 * @param bool $txn
+	 * @param mixed $txn
 	 * @return \pq\Gateway\Rowset
 	 * @throws Exception
 	 */
 	function create($txn = true) {
-		$txn = $txn ? $this->table->getConnection()->startTransaction() : false;
+		if ($txn && !($txn instanceof pq\Transaction)) {
+			$txn = $this->table->getConnection()->startTransaction();
+		}
 		try {
 			foreach ($this->rows as $row) {
 				$row->create();
@@ -123,12 +125,14 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	
 	/**
 	 * Update all rows of this rowset
-	 * @param bool $txn
+	 * @param mixed $txn
 	 * @return \pq\Gateway\Rowset
 	 * @throws \Exception
 	 */
 	function update($txn = true) {
-		$txn = $txn ? $this->table->getConnection()->startTransaction() : false;
+		if ($txn && !($txn instanceof pq\Transaction)) {
+			$txn = $this->table->getConnection()->startTransaction();
+		}
 		try {
 			foreach ($this->rows as $row) {
 				$row->update();
@@ -147,12 +151,14 @@ class Rowset implements \SeekableIterator, \Countable, \JsonSerializable
 	
 	/**
 	 * Delete all rows of this rowset
-	 * @param type $txn
+	 * @param mixed $txn
 	 * @return \pq\Gateway\Rowset
 	 * @throws \Exception
 	 */
 	function delete($txn = true) {
-		$txn = $txn ? $this->table->getConnection()->startTransaction() : false;
+		if ($txn && !($txn instanceof pq\Transaction)) {
+			$txn = $this->table->getConnection()->startTransaction();
+		}
 		try {
 			foreach ($this->rows as $row) {
 				$row->delete();
