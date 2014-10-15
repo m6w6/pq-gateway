@@ -4,36 +4,41 @@ namespace pq\Gateway\Table;
 
 use \pq\Gateway\Table;
 
-/*
- * 	 case when att1.attname like '%\_'||att2.attname then
-		substring(att1.attname from '^.*(?=_'||att2.attname||'$)')
-	 else
-		att1.attname
-	 end
- */
 const RELATION_SQL = <<<SQL
 select
-	regexp_replace(att1.attname, '_'||att2.attname||'$', '')
-                  as "name"
-	,cl1.relname  as "foreignTable"
-	,att1.attname as "foreignColumn"
+	 cl1.relname  as "foreignTable"
+	,array(
+		select 
+			 attname
+			from pg_attribute,
+			generate_subscripts(conkey,1) index
+		where 
+			attrelid = cl1.oid 
+		and attnum   = any(conkey) 
+		and conkey[index] = attnum
+		order by
+			 index
+	)             as "foreignColumns"
 	,cl2.relname  as "referencedTable"
-	,att2.attname as "referencedColumn"
-from
-     pg_constraint co
-    ,pg_class      cl1
-    ,pg_class      cl2
-    ,pg_attribute  att1
-    ,pg_attribute  att2
+	,array(
+		select 
+			 attname
+			from pg_attribute,
+			generate_subscripts(confkey,1) index
+		where 
+			attrelid = cl2.oid 
+		and attnum   = any(confkey) 
+		and confkey[index] = attnum
+		order by
+			 index
+	)             as "referencedColumns"
+from pg_constraint co
+join pg_class      cl1 on cl1.oid = co.conrelid
+join pg_class      cl2 on cl2.oid = co.confrelid
 where
 	 cl1.relname  = \$1
+and co.contype    = 'f'
 and co.confrelid != 0
-and co.conrelid   = cl1.oid
-and co.conkey[1]  = att1.attnum and cl1.oid = att1.attrelid
-and co.confrelid  = cl2.oid
-and co.confkey[1] = att2.attnum and cl2.oid = att2.attrelid
-order by 
-	att1.attnum
 SQL;
 
 /**
@@ -42,7 +47,7 @@ SQL;
 class Relations implements \Countable, \IteratorAggregate
 {
 	/**
-	 * @var object
+	 * @var array
 	 */
 	protected $references;
 	
@@ -55,10 +60,11 @@ class Relations implements \Countable, \IteratorAggregate
 			$table->getQueryExecutor()->execute(
 				new \pq\Query\Writer(RELATION_SQL, array($table->getName())),
 				function($result) use($table, $cache) {
-					$rel = $result->map([3,0], null, \pq\Result::FETCH_ASSOC);
-					foreach ($rel as $table => $reference) {
-						foreach ($reference as $name => $ref) {
-							$this->references[$table][$name] = new Reference($ref);
+					$rel = $result->map([1,2], null, \pq\Result::FETCH_ASSOC);
+					foreach ($rel as $ref) {
+						foreach ($ref as $table => $key) {
+							$reference = new Reference($key);
+							$this->references[$table][$reference->name] = $reference;
 						}
 					}
 					$cache->set("$table:relations", $this->references);
@@ -110,9 +116,9 @@ class Relations implements \Countable, \IteratorAggregate
 	
 	/**
 	 * Implements \IteratorAggregate
-	 * @return \RecursiveArrayIterator
+	 * @return \ArrayIterator
 	 */
 	function getIterator() {
-		return new \RecursiveArrayIterator($this->references);
+		return new \ArrayIterator($this->references);
 	}
 }

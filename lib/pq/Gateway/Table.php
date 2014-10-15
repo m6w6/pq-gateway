@@ -360,10 +360,12 @@ class Table implements \SplSubject
 			return $this->onResult(null);
 		}
 		
-		return $this->find(
-			array($rel->foreignColumn . "=" => $foreign->{$rel->referencedColumn}),
-			$order, $limit, $offset
-		);
+		$where = array();
+		foreach ($rel as $key => $ref) {
+			$where["$key="] = $foreign->$ref;
+		}
+		
+		return $this->find($where, $order, $limit, $offset);
 	}
 	
 	/**
@@ -379,9 +381,11 @@ class Table implements \SplSubject
 			return $this->onResult(null);
 		}
 		
-		return $this->find(
-			array($rel->referencedColumn . "=" => $foreign->{$rel->foreignColumn})
-		);
+		$where = array();
+		foreach ($rel as $key => $ref) {
+			$where["$ref="] = $foreign->$key;
+		}
+		return $this->find($where);
 	}
 	
 	/**
@@ -401,12 +405,15 @@ class Table implements \SplSubject
 			if (!($relation instanceof Table\Reference)) {
 				$relation = static::resolve($relation)->getRelation($this->getName());
 			}
-			$query->write("JOIN", $relation->foreignTable)->write("ON")->criteria(
-				array(
-					"{$relation->referencedTable}.{$relation->referencedColumn}=" => 
-						new QueryExpr("{$relation->foreignTable}.{$relation->foreignColumn}")
-				)
-			);
+			$query->write("JOIN", $relation->foreignTable)->write("ON");
+			foreach ($relation as $key => $ref) {
+				$query->criteria(
+					array(
+						"{$relation->referencedTable}.{$ref}=" => 
+							new QueryExpr("{$relation->foreignTable}.{$key}")
+					)
+				);
+			}
 		}
 		if ($where) {
 			$query->write("WHERE")->criteria($where);

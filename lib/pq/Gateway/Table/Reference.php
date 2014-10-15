@@ -5,7 +5,7 @@ namespace pq\Gateway\Table;
 /**
  * Foreign key
  */
-class Reference
+class Reference implements \IteratorAggregate
 {
 	/**
 	 * @var string
@@ -18,9 +18,9 @@ class Reference
 	public $foreignTable;
 	
 	/**
-	 * @var string
+	 * @var array
 	 */
-	public $foreignColumn;
+	public $foreignColumns;
 	
 	/**
 	 * @var string
@@ -28,19 +28,19 @@ class Reference
 	public $referencedTable;
 	
 	/**
-	 * @var string
+	 * @var array
 	 */
-	public $referencedColumn;
+	public $referencedColumns;
 	
 	/**
-	 * @param array $state
+	 * @param array $ref
 	 */
-	function __construct($state) {
-		$this->name = $state["name"];
-		$this->foreignColumn = $state["foreignColumn"];
-		$this->foreignTable = $state["foreignTable"];
-		$this->referencedColumn = $state["referencedColumn"];
-		$this->referencedTable = $state["referencedTable"];
+	function __construct($ref) {
+		$this->name = self::name($ref);
+		$this->foreignTable = $ref["foreignTable"];
+		$this->foreignColumns = $ref["foreignColumns"];
+		$this->referencedTable = $ref["referencedTable"];
+		$this->referencedColumns = $ref["referencedColumns"];
 	}
 	
 	/**
@@ -49,5 +49,25 @@ class Reference
 	 */
 	static function __set_state($state) {
 		return new static($state);
+	}
+	
+	/**
+	 * Compose an identifying name
+	 * @param array $ref
+	 * @return string
+	 */
+	static function name($ref) {
+		return implode("_", array_map(function($ck, $cr) {
+			return preg_replace("/_$cr\$/", "", $ck);
+		}, $ref["foreignColumns"], $ref["referencedColumns"]));
+	}
+	
+	/**
+	 * Implements IteratorAggregate
+	 * @return \ArrayIterator
+	 */
+	function getIterator() {
+		return new \ArrayIterator(array_combine(
+			$this->foreignColumns, $this->referencedColumns));
 	}
 }
