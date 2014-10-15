@@ -30,7 +30,7 @@ interface ExecutorInterface extends \SplSubject
 	function execute(WriterInterface $query, callable $callback);
 	
 	/**
-	 * @return WriterInterface
+	 * @return \pq\Query\WriterInterface
 	 */
 	function getQuery();
 	

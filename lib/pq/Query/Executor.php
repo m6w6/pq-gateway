@@ -18,7 +18,7 @@ class Executor implements ExecutorInterface
 	protected $observers;
 	
 	/**
-	 * @var WriterInterface
+	 * @var \pq\Query\WriterInterface
 	 */
 	protected $query;
 	
