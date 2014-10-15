@@ -18,7 +18,7 @@ class Expr
 	 * @param string $e the expression or a format string followed by arguments
 	 * @param string ...
 	 */
-	function __construct($e, $arg = null) {
+	function __construct($e) {
 		if (func_num_args() > 1) {
 			$e = call_user_func_array("sprintf", func_get_args());
 		}
@@ -52,11 +52,14 @@ class Expr
 	 * @throws \UnexpectedValueException if any expr is NULL
 	 */
 	function add(Expr $next) {
-		if ($this->isNull() || $next->isNull()) {
+		if ($this->isNull()) {
 			throw new \UnexpectedValueException("Cannot add anything to NULL");
 		}
-		for ($that = $this; $that->next; $that = $that->next);
-		$that->next = $next;
+		if ($this->next) {
+			$this->next->add($next);
+		} else {
+			$this->next = $next;
+		}
 		return $this;
 	}
 }
