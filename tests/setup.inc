@@ -3,7 +3,7 @@
 ini_set("date.timezone", "UTC");
 ini_set("error_reporting", E_ALL);
 
-const PQ_TEST_DSN = "";
+define("PQ_TEST_DSN", getenv("PQ_TEST_DSN"));
 
 const PQ_TEST_SETUP_SQL = <<<SQL
 	create extension if not exists hstore;
