@@ -1,6 +1,6 @@
 <?php
 
-namespace pq\Query\Executor;
+namespace pq\Query;
 
 use \pq\Query\Executor;
 use \pq\Query\WriterInterface;
@@ -54,8 +54,8 @@ class AsyncExecutor extends Executor
 	 * 
 	 * Example with amphp:
 	 * <code>
-	 * use amp\Future;
-	 * use function amp\reactor;
+	 * use Amp\Future;
+	 * use function Amp\reactor;
 	 * 
 	 * $exec = new pq\Query\AsyncExecutor(new pq\Connection);
 	 * $exec->setCallbacks(
@@ -69,7 +69,7 @@ class AsyncExecutor extends Executor
 	 * },
 	 * # then
 	 * function(Future $context, callable $cb) {
-	 *		return $context->when(function ($error, $result) {
+	 *		return $context->when(function ($error, $result) use ($cb) {
 	 *			$cb($result);
 	 *		});
 	 * });
@@ -99,27 +99,17 @@ class AsyncExecutor extends Executor
 	 * @param callable $callback
 	 * @return array($context, $resolver)
 	 */
-	protected function prepareCallback(callable $callback/*, ... */) {
+	protected function prepareCallbacks(callable $callback/*, ... */) {
 		list($init, $done, $then) = $this->getCallbacks();
 		
 		$context = $init();
 		foreach (func_get_args() as $cb) {
 			$then($context, $cb);
 		}
-		$then($context, $callback);
 		
 		return array($context, function($result) use ($context, $done) {
 			$done($context, $result);
 		});
-	}
-	
-	/**
-	 * Result callback
-	 * @param \pq\Result $result
-	 */
-	protected function receiveResult(\pq\Result $result) {
-		$this->result = $result;
-		$this->notify();
 	}
 	
 	/**
@@ -133,8 +123,11 @@ class AsyncExecutor extends Executor
 		$this->query = $query;
 		$this->notify();
 		
-		list($context, $resolver) = $this->prepareCallback(
-			array($this, "receiveResult"), $callback);
+		list($context, $resolver) = $this->prepareCallbacks(
+			function(\pq\Result $result) {
+				$this->result = $result;
+				$this->notify();
+			}, $callback);
 		$this->getConnection()->execParamsAsync($query, $query->getParams(), 
 			$query->getTypes(), $resolver);
 		return $context;
