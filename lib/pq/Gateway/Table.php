@@ -405,14 +405,26 @@ class Table implements \SplSubject
 			if (!($relation instanceof Table\Reference)) {
 				$relation = static::resolve($relation)->getRelation($this->getName());
 			}
-			$query->write("JOIN", $relation->foreignTable)->write("ON");
-			foreach ($relation as $key => $ref) {
-				$query->criteria(
-					array(
-						"{$relation->referencedTable}.{$ref}=" => 
-							new QueryExpr("{$relation->foreignTable}.{$key}")
-					)
-				);
+			if ($this->getName() === $relation->foreignTable) {
+				$query->write("JOIN", $relation->referencedTable)->write("ON");
+				foreach ($relation as $key => $ref) {
+					$query->criteria(
+						array(
+							"{$relation->referencedTable}.{$ref}=" => 
+								new QueryExpr("{$relation->foreignTable}.{$key}")
+						)
+					);
+				}
+			} else {
+				$query->write("JOIN", $relation->foreignTable)->write("ON");
+				foreach ($relation as $key => $ref) {
+					$query->criteria(
+						array(
+							"{$relation->referencedTable}.{$ref}=" => 
+								new QueryExpr("{$relation->foreignTable}.{$key}")
+						)
+					);
+				}
 			}
 		}
 		if ($where) {
