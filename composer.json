@@ -17,7 +17,8 @@
 			"pq\\Query": "lib"
 		}
 	},
-	"suggest": {
-		"react/promise": "1.0.*"
+	"require-dev": {
+		"react/promise": "~2.2",
+		"amphp/amp": "^1.0-beta"
 	}
 }

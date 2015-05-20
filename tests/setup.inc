@@ -39,7 +39,7 @@ const PQ_TEST_TEARDOWN_SQL = <<<SQL
 	drop table if exists reftest cascade;
 SQL;
 
-include_once __DIR__ . "/../lib/autoload.php";
+require_once __DIR__ . "/../vendor/autoload.php";
 
 function executeInConcurrentTransaction(\pq\Query\ExecutorInterface $exec, $sql, array $params = null) {
 	$conn = $exec->getConnection();

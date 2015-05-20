@@ -33,7 +33,7 @@ class AsyncExecutor extends Executor
 	 * 
 	 * Example with reactphp:
 	 * <code>
-	 * use \React\Promise\Deferred;
+	 * use React\Promise\Deferred;
 	 * 
 	 * $exec = new pq\Query\AsyncExecutor(new pq\Connection);
 	 * $exec->setCallbacks(
@@ -43,33 +43,32 @@ class AsyncExecutor extends Executor
 	 * },
 	 * # done
 	 * function(Deferred $context, $result) {
-	 *		$context->resolver()->resolve($result);
+	 *		$context->resolve($result);
 	 * },
 	 * # then
 	 * function(Deferred $context, callable $cb) {
-	 *		return $context->then($cb);
+	 *		return $context->promise()->then($cb);
 	 * });
 	 * $exec->execute($queryWriter, function($result){});
 	 * </code>
 	 * 
 	 * Example with amphp:
 	 * <code>
-	 * use Amp\Future;
-	 * use function Amp\reactor;
+	 * use Amp\Deferred;
 	 * 
 	 * $exec = new pq\Query\AsyncExecutor(new pq\Connection);
 	 * $exec->setCallbacks(
 	 * # init context
 	 * function() {
-	 *		return new Future(reactor());
+	 *		return new Deferred;
 	 * },
 	 * # done
-	 * function(Future $context, $result) {
+	 * function(Deferred $context, $result) {
 	 *		$context->succeed($result);
 	 * },
 	 * # then
-	 * function(Future $context, callable $cb) {
-	 *		return $context->when(function ($error, $result) use ($cb) {
+	 * function(Deferred $context, callable $cb) {
+	 *		return $context->promise()->when(function($error, $result) use ($cb) {
 	 *			$cb($result);
 	 *		});
 	 * });
@@ -127,6 +126,7 @@ class AsyncExecutor extends Executor
 			function(\pq\Result $result) {
 				$this->result = $result;
 				$this->notify();
+				return $result;
 			}, $callback);
 		$this->getConnection()->execParamsAsync($query, $query->getParams(), 
 			$query->getTypes(), $resolver);
