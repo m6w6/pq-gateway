@@ -1,11 +1,11 @@
 # pq-gateway
 
 A [gateway](http://martinfowler.com/eaaCatalog/tableDataGateway.html) implementation 
-for [ext-pq](http://git.php.net/?p=pecl/database/pq.git;a=summary).
+for [ext-pq](https://github.com/m6w6/ext-pq).
 
 ## Docs
 
-http://devel-m6w6.rhcloud.com/mdref/pq-gateway
+http://mdref.m6w6.name/pq-gateway
 
 ## News
 * ***2015-05-20:*** 2.1.0 tagged
