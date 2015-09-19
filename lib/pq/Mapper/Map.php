@@ -21,7 +21,7 @@ class Map implements MapInterface
 		foreach ($properties as $property) {
 			$property->setContainer($this);
 		}
-		$this->objects = new ObjectCache($this);
+		$this->objects = new ObjectManager($this);
 	}
 
 	function getClass() {
@@ -48,52 +48,7 @@ class Map implements MapInterface
 		$this->properties[] = $property;
 		return $this;
 	}
-/*
-	function idOf(Row $row, $check = false) {
-		$identity = $row->getIdentity();
-		if (is_scalar($identity)) {
-			return $identity;
-		}
 
-		if ($check && !isset($identity)) {
-			return false;
-		}
-
-		if (is_array($identity)) {
-			if ($check && array_search(null, $identity, true)) {
-				return false;
-			}
-			/* one level is better than no level * /
-			asort($identity);
-		}
-		return json_encode($identity);
-	}
-	
-	function objectOf(Row $row) {
-		$id = $this->idOf($row);
-
-		if (isset($this->objects["obj"][$id])) {
-			$obj = $this->objects["obj"][$id];
-		} else {
-			$obj = new $this->class;
-			$this->objects["obj"][$id] = $obj;
-			$this->objects["row"][spl_object_hash($obj)] = $row;
-		}
-		return $obj;
-	}
-
-	function rowOf($object) {
-		$id = spl_object_hash($object);
-
-		if (isset($this->objects["row"][$id])) {
-			$row = $this->objects["row"][$id];
-		} else {
-			$row = new Row($this->gateway);
-			$this->objects["row"][$id] = $row;
-		}
-		return $row;
-	}
-*/
 	function allOf(Row $row, $refName, &$objects = null) {
 		/* apply objectOf to populate the object cache */
 		return $this->gateway->of($row, $refName)->apply(function($row) use(&$objects) {

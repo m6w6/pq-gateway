@@ -6,7 +6,7 @@ use OutOfBoundsException;
 use pq\Exception\BadMethodCallException;
 use pq\Gateway\Row;
 
-class ObjectCache
+class ObjectManager
 {
 	private $map;
 	private $obj = [];

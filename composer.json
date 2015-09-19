@@ -15,7 +15,7 @@
 		"psr-0": {
 			"pq\\Gateway": "lib",
 			"pq\\Query": "lib",
-			"pq\\Data": "lib"
+			"pq\\Mapper": "lib"
 		}
 	},
 	"require-dev": {

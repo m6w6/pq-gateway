@@ -39,21 +39,6 @@ class All implements RefPropertyInterface
 				$map->unmap($ref);
 			}
 		};
-		
-		if (!$this->container->getObjects()->rowId($rowToUpdate, true)) {
-			return [$this, "write"];
-		} else {
-			/* $object = User */
-			/* $refs = array(Email) */
-			/* $property = Property\Ref(Email::$user)->to(User)->by("email_user") */
-			/* now update array(Email) with id of User, i.e. $ref->user_id = $object->id */
-			$map = $this->mapper->mapOf($this->refClass);
-			$refs = $this->extract($object);
-			foreach ($refs as $ref) {
-				$property->assign($ref, $object);
-				$map->unmap($ref);
-			}
-		}
 	}
 
 	private function findRefProperty($object) {
@@ -71,25 +56,5 @@ class All implements RefPropertyInterface
 					$this->refClass, $this->container->getClass(), $this->refName));
 		}
 		return current($property);
-	}
-
-	function read2(RowGateway $row) {
-		#echo __METHOD__." ".$this;
-		$ref = $this->getRefMap()->ref($row, $this->refName);
-		$value = $this->mapper->map($ref, $this->refClass);
-		return [$this->property => $value];
-	}
-	
-	function write2($object) {
-		#echo __METHOD__." ".$this;
-		$value = $this->extract($object);
-		foreach ($value as $ref) {
-			$this->mapper->queue(function() use(&$object, &$ref) {
-				$map = $this->getRefMap()->getRefMapping($this->refName);
-				$map->assign($ref, $object);
-				$this->mapper->unmap($ref, $this->getRefMap());
-			});
-		}
-		return [];
 	}
 }

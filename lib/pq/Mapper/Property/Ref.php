@@ -6,6 +6,7 @@ use pq\Gateway\Row;
 use pq\Mapper\Mapper;
 use pq\Mapper\RefProperty;
 use pq\Mapper\RefPropertyInterface;
+use UnexpectedValueException;
 
 class Ref implements RefPropertyInterface
 {
@@ -29,7 +30,13 @@ class Ref implements RefPropertyInterface
 	function write($object, Row $rowToUpdate) {
 		$map = $this->mapper->mapOf($this->refClass);
 		$ref = $this->extract($object);
-		$rel = $map->relOf($this->container, $this->refName);
+		if (!$rel = $map->relOf($this->container, $this->refName)) {
+			throw new UnexpectedValueException(
+				sprintf("Unrelated reference from %s to %s with name %s",
+					$this->container->getGateway()->getName(),
+					$map->getGateway()->getName(),
+					$this->refName));
+		}
 		foreach ($rel as $fgn => $col) {
 			foreach ($this->findFieldProperty($col) as $property) {
 				$value = $property->extract($ref);
@@ -43,33 +50,5 @@ class Ref implements RefPropertyInterface
 		return array_filter($map->getProperties(), function($property) use($col) {
 			return $property->exposes($col);
 		});
-	}
-
-
-	function read2(RowGateway $row) {
-		#echo __METHOD__." ".$this;
-		$map = $this->getRefMap();
-		$rel = $this->container->getGateway()->getRelation(
-			$map->getGateway()->getName(), $this->refName);
-		$key = array_combine($rel->referencedColumns, array_map(function($c) use($row) {
-			return $row->$c->get();
-		}, $rel->foreignColumns));
-		if (($obj = $this->mapper->objectOfRowId($this->refClass, $key))) {
-			yield $this->property => $obj;
-		} else foreach ($map->getGateway()->by($row, $this->refName) as $row) {
-			yield $this->property => $this->mapper->objectOf($this->refClass, $row);
-		}
-	}
-	
-	function write2($object) {
-		#echo __METHOD__." ".$this;
-		$map = $this->getRefMap();
-		$rel = $this->container->getGateway()->getRelation(
-			$map->getGateway()->getName(), $this->refName);
-		$ref = $this->extract($object);
-		foreach ($rel as $fgn => $col) {
-			$fld = $map->getFieldMapping($col);
-			yield $fgn => $fld->extract($ref);
-		}
 	}
 } 

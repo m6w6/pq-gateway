@@ -53,7 +53,7 @@ class Mapper
 	 * @return \pq\Mapper\Storage
 	 */
 	function createStorage($class) {
-		return new Storage($this, $class);
+		return new Storage($this->mapOf($class));
 	}
 
 	/**
