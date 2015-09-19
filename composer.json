@@ -14,7 +14,8 @@
 	"autoload": {
 		"psr-0": {
 			"pq\\Gateway": "lib",
-			"pq\\Query": "lib"
+			"pq\\Query": "lib",
+			"pq\\Data": "lib"
 		}
 	},
 	"require-dev": {

@@ -36,7 +36,7 @@ class Reference implements \IteratorAggregate
 	 * @param array $ref
 	 */
 	function __construct($ref) {
-		$this->name = self::name($ref);
+		$this->name = self::name($ref["foreignColumns"], $ref["referencedColumns"]);
 		$this->foreignTable = $ref["foreignTable"];
 		$this->foreignColumns = $ref["foreignColumns"];
 		$this->referencedTable = $ref["referencedTable"];
@@ -53,13 +53,14 @@ class Reference implements \IteratorAggregate
 	
 	/**
 	 * Compose an identifying name
-	 * @param array $ref
+	 * @param array $foreignColumns
+	 * @param array $referencedColumns
 	 * @return string
 	 */
-	static function name($ref) {
+	static function name(array $foreignColumns, array $referencedColumns) {
 		return implode("_", array_map(function($ck, $cr) {
 			return preg_replace("/_$cr\$/", "", $ck);
-		}, $ref["foreignColumns"], $ref["referencedColumns"]));
+		}, $foreignColumns, $referencedColumns));
 	}
 	
 	/**
