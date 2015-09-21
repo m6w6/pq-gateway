@@ -32,6 +32,14 @@ class ObjectManager
 	}
 
 	/**
+	 * Get the map
+	 * @return MapInterface
+	 */
+	function getMap() {
+		return $this->map;
+	}
+
+	/**
 	 * Reset all managed objects
 	 */
 	function reset() {

@@ -1,5 +1,13 @@
 <?php
 
+use pq\Connection;
+use pq\Gateway\Table;
+use pq\Mapper\Map;
+use pq\Mapper\MapInterface;
+use pq\Mapper\Mapper;
+use pq\Query\ExecutorInterface;
+use pq\Query\Writer;
+
 ini_set("date.timezone", "UTC");
 ini_set("error_reporting", E_ALL);
 
@@ -41,14 +49,14 @@ SQL;
 
 require_once __DIR__ . "/../vendor/autoload.php";
 
-function executeInConcurrentTransaction(\pq\Query\ExecutorInterface $exec, $sql, array $params = null) {
+function executeInConcurrentTransaction(ExecutorInterface $exec, $sql, array $params = null) {
 	$conn = $exec->getConnection();
-	$exec->setConnection(new pq\Connection(PQ_TEST_DSN));
-	$exec->execute(new \pq\Query\Writer($sql, $params), function(){});
+	$exec->setConnection(new Connection(PQ_TEST_DSN));
+	$exec->execute(new Writer($sql, $params), function(){});
 	$exec->setConnection($conn);
 }
 
-class QueryLogger implements \SplObserver
+class QueryLogger implements SplObserver
 {
 	protected $fp;
 	
@@ -57,7 +65,7 @@ class QueryLogger implements \SplObserver
 			$logfile = __DIR__."/query.log";
 		}
 		if (!$this->fp = @fopen($logfile, "a")) {
-			throw new \RuntimeException(error_get_last()["message"]);
+			throw new RuntimeException(error_get_last()["message"]);
 		}
 	}
 	
@@ -67,7 +75,7 @@ class QueryLogger implements \SplObserver
 		}
 	}
 	
-	function update(\SplSubject $executor) {
+	function update(SplSubject $executor) {
 		$result = $executor->getResult();
 		if (isset($result)) {
 			fprintf($this->fp, "[%s] R %s\n", 
@@ -79,5 +87,31 @@ class QueryLogger implements \SplObserver
 				preg_replace("/\s+/", " ", $query), 
 				json_encode($query->getParams()));
 		}
+	}
+}
+
+class TestModel implements JsonSerializable {
+	private $id, $created, $counter, $number, $data, $list, $prop;
+
+	function jsonSerialize() {
+		return get_object_vars($this);
+	}
+
+	/**
+	 * @param Mapper $mapper
+	 * @return MapInterface
+	 */
+	static function mapAs(Mapper $mapper) {
+		return new Map(
+			__CLASS__,
+			new Table("test"),
+			$mapper->mapField("id"),
+			$mapper->mapField("created"),
+			$mapper->mapField("counter"),
+			$mapper->mapField("number"),
+			$mapper->mapField("data"),
+			$mapper->mapField("list"),
+			$mapper->mapField("prop")
+		);
 	}
 }
