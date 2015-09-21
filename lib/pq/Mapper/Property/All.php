@@ -11,12 +11,22 @@ use UnexpectedValueException;
 class All implements RefPropertyInterface
 {
 	use RefProperty;
-	
+
+	/**
+	 * Create a child rows mapping
+	 * @param Mapper $mapper
+	 * @param string $property
+	 */
 	function __construct(Mapper $mapper, $property) {
 		$this->mapper = $mapper;
 		$this->property = $property;
 	}
-	
+
+	/**
+	 * Read the child objects
+	 * @param Row $row
+	 * @param object $objectToUpdate
+	 */
 	function read(Row $row, $objectToUpdate) {
 		$val = $this->extract($objectToUpdate);
 		if (!isset($val)) {
@@ -27,6 +37,12 @@ class All implements RefPropertyInterface
 		}
 	}
 
+	/**
+	 * Write the child rows
+	 * @param object $object
+	 * @param Row $rowToUpdate
+	 * @return callable deferred callback
+	 */
 	function write($object, Row $rowToUpdate) {
 		$property = $this->findRefProperty($object);
 		$map = $this->mapper->mapOf($this->refClass);
@@ -41,6 +57,12 @@ class All implements RefPropertyInterface
 		};
 	}
 
+	/**
+	 * Find the referring property that references $object on our foreign key
+	 * @param object $object
+	 * @return RefPropertyInterface[]
+	 * @throws UnexpectedValueException
+	 */
 	private function findRefProperty($object) {
 		$map = $this->mapper->mapOf($this->refClass);
 		$property = array_filter($map->getProperties(), function($property) use($object) {

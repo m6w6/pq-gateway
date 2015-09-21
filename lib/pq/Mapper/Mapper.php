@@ -2,37 +2,56 @@
 
 namespace pq\Mapper;
 
+use pq\Mapper\Property\All;
+use pq\Mapper\Property\Field;
+use pq\Mapper\Property\Ref;
+use ReflectionProperty;
 use UnexpectedValueException;
 
 class Mapper
 {
+	/**
+	 * @var MapInterface[]
+	 */
 	private $maps;
+
+	/**
+	 * @var ReflectionProperty[]
+	 */
 	private $refp;
 
 	/**
-	 * @param \pq\Mapper\MapInterface $map
-	 * @return \pq\Mapper\Mapper
+	 * Register a mapping
+	 * @param MapInterface $map
+	 * @return Mapper
 	 */
 	function register(MapInterface $map) {
 		$this->maps[$map->getClass()] = $map;
 		return $this;
 	}
 
+	/**
+	 * Get a property reflector
+	 * @param string $class
+	 * @param string $prop
+	 * @return ReflectionProperty
+	 */
 	function getReflector($class, $prop) {
 		if (is_object($class)) {
 			$class = get_class($class);
 		}
 		$hash = "$class::$prop";
 		if (!isset($this->refp[$hash])) {
-			$this->refp[$hash] = new \ReflectionProperty($class, $prop);
+			$this->refp[$hash] = new ReflectionProperty($class, $prop);
 			$this->refp[$hash]->setAccessible(true);
 		}
 		return $this->refp[$hash];
 	}
 
 	/**
+	 * Get the mapping of $class
 	 * @param string $class
-	 * @return \pq\Mapper\MapInterface
+	 * @return MapInterface
 	 * @throws UnexpectedValueException
 	 */
 	function mapOf($class) {
@@ -49,35 +68,39 @@ class Mapper
 	}
 
 	/**
+	 * Create a storage for $class
 	 * @param string $class
-	 * @return \pq\Mapper\Storage
+	 * @return Storage
 	 */
 	function createStorage($class) {
 		return new Storage($this->mapOf($class));
 	}
 
 	/**
+	 * Create a simple field mapping
 	 * @param string $property
 	 * @param string $field
-	 * @return \pq\Mapper\Property\Field
+	 * @return Field
 	 */
 	function mapField($property, $field = null) {
-		return new Property\Field($this, $property, $field);
+		return new Field($this, $property, $field);
 	}
 
 	/**
+	 * Create a child rows mapping by foreign key
 	 * @param string $property
-	 * @return \pq\Mapper\Property\All
+	 * @return All
 	 */
 	function mapAll($property) {
-		return new Property\All($this, $property);
+		return new All($this, $property);
 	}
 
 	/**
+	 * Create a parent row mapping by foreign key
 	 * @param string $property
-	 * @return \pq\Mapper\Property\Ref
+	 * @return Ref
 	 */
 	function mapRef($property) {
-		return new Property\Ref($this, $property);
+		return new Ref($this, $property);
 	}
 }

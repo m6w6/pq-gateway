@@ -5,15 +5,37 @@ namespace pq\Mapper;
 use pq\Gateway\Row;
 use pq\Gateway\Rowset;
 use pq\Gateway\Table;
+use pq\Gateway\Table\Reference;
 use pq\Query\Expr;
 
 class Map implements MapInterface
 {
+	/**
+	 * @var string
+	 */
 	private $class;
+
+	/**
+	 * @var Table
+	 */
 	private $gateway;
+
+	/**
+	 * @var ObjectManager
+	 */
 	private $objects;
+
+	/**
+	 * @var PropertyInterface[]
+	 */
 	private $properties;
 
+	/**
+	 * Create a new object map definition
+	 * @param string $class
+	 * @param Table $gateway
+	 * @param ...PropertyInterface $properties
+	 */
 	function __construct($class, Table $gateway, PropertyInterface ...$properties) {
 		$this->class = $class;
 		$this->gateway = $gateway;
@@ -24,31 +46,56 @@ class Map implements MapInterface
 		$this->objects = new ObjectManager($this);
 	}
 
+	/**
+	 * Get the name of the mapped class
+	 * @return string
+	 */
 	function getClass() {
 		return $this->class;
 	}
 
+	/**
+	 * Get the object manager
+	 * @return ObjectManager
+	 */
 	function getObjects() {
 		return $this->objects;
 	}
 
 	/**
+	 * Get the underlying table gateway
 	 * @return Table
 	 */
 	function getGateway() {
 		return $this->gateway;
 	}
 
+	/**
+	 * Get the defined properties to map
+	 * @return PropertyInterface[]
+	 */
 	function getProperties() {
 		return $this->properties;
 	}
 
+	/**
+	 * Add a property to map
+	 * @param PropertyInterface $property
+	 * @return Map
+	 */
 	function addProperty(PropertyInterface $property) {
 		$property->setContainer($this);
 		$this->properties[] = $property;
 		return $this;
 	}
 
+	/**
+	 * Get all child rows by foreign key
+	 * @param Row $row
+	 * @param string $refName
+	 * @param array $objects
+	 * @return Rowset
+	 */
 	function allOf(Row $row, $refName, &$objects = null) {
 		/* apply objectOf to populate the object cache */
 		return $this->gateway->of($row, $refName)->apply(function($row) use(&$objects) {
@@ -56,6 +103,13 @@ class Map implements MapInterface
 		});
 	}
 
+	/**
+	 * Get the parent row by foreign key
+	 * @param Row $row
+	 * @param string $refName
+	 * @param array $objects
+	 * @return Rowset
+	 */
 	function refOf(Row $row, $refName, &$objects = null) {
 		$rid = [];
 		$rel = $row->getTable()->getRelation($this->gateway->getName(), $refName);
@@ -77,11 +131,22 @@ class Map implements MapInterface
 		});
 	}
 
+	/**
+	 * Get the table relation reference
+	 * @param MapInterface $map
+	 * @param string $refName
+	 * @return Reference
+	 */
 	function relOf(MapInterface $map, $refName) {
 		return $map->getGateway()->getRelation(
 			$this->gateway->getName(), $refName);
 	}
 
+	/**
+	 * Drain the deferred callback queue
+	 * @param callable[] $deferred
+	 * @param callable $exec
+	 */
 	private function drain(array $deferred, callable $exec) {
 		while ($deferred) {
 			$cb = array_shift($deferred);
@@ -91,6 +156,11 @@ class Map implements MapInterface
 		}
 	}
 
+	/**
+	 * Map a row to an object
+	 * @param Row $row
+	 * @return object
+	 */
 	function map(Row $row) {
 		$deferred = [];
 		$object = $this->objects->asObject($row);
@@ -105,6 +175,11 @@ class Map implements MapInterface
 		return $object;
 	}
 
+	/**
+	 * Map a rowset to an array of objects
+	 * @param Rowset $rows
+	 * @return object[]
+	 */
 	function mapAll(Rowset $rows) {
 		$objects = [];
 		foreach ($rows as $row) {
@@ -113,6 +188,10 @@ class Map implements MapInterface
 		return $objects;
 	}
 
+	/**
+	 * Unmap on object
+	 * @param object $object
+	 */
 	function unmap($object) {
 		$deferred = [];
 		/* @var $row Row */
@@ -149,5 +228,4 @@ class Map implements MapInterface
 			$row->update();
 		}
 	}
-
 }
