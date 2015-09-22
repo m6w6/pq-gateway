@@ -2,7 +2,7 @@
 
 namespace pq\Gateway;
 
-include_once __DIR__."/../../../setup.inc";
+require_once __DIR__."/../../../setup.inc";
 
 class TableTest extends \PHPUnit_Framework_TestCase {
 

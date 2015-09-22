@@ -2,7 +2,7 @@
 
 namespace pq\Query;
 
-include_once __DIR__."/../../../setup.inc";
+require_once __DIR__."/../../../setup.inc";
 
 use pq\Connection;
 use React\Promise\Deferred as Reacted;
