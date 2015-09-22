@@ -45,8 +45,10 @@ class Ref implements RefPropertyInterface
 	 * @throws UnexpectedValueException
 	 */
 	function write($object, Row $rowToUpdate) {
+		if (!$ref = $this->extract($object)) {
+			return;
+		}
 		$map = $this->mapper->mapOf($this->refClass);
-		$ref = $this->extract($object);
 		if (!$rel = $map->relOf($this->container, $this->refName)) {
 			throw new UnexpectedValueException(
 				sprintf("Unrelated reference from %s to %s with name %s",

@@ -30,7 +30,8 @@ const PQ_TEST_SETUP_SQL = <<<SQL
 	drop table if exists reftest cascade;
 	create table reftest (
 		test_id integer not null references test on delete cascade,
-		another_test_id integer not null references test on delete cascade
+		another_test_id integer not null references test on delete cascade,
+		primary key(test_id, another_test_id)
 	);
 	
 	insert into test values (default, 'yesterday', -1, -1.1, 'yesterday', '{-1,0,1}');
@@ -92,9 +93,18 @@ class QueryLogger implements SplObserver
 
 class TestModel implements JsonSerializable {
 	private $id, $created, $counter, $number, $data, $list, $prop;
+	private $ref1, $ref2;
 
 	function jsonSerialize() {
 		return get_object_vars($this);
+	}
+
+	function __get($p) {
+		return $this->$p;
+	}
+
+	function __set($p, $v) {
+		$this->$p = $v;
 	}
 
 	/**
@@ -111,7 +121,34 @@ class TestModel implements JsonSerializable {
 			$mapper->mapField("number"),
 			$mapper->mapField("data"),
 			$mapper->mapField("list"),
-			$mapper->mapField("prop")
+			$mapper->mapField("prop"),
+			$mapper->mapAll("ref1")->to(RefTestModel::class)->by("test"),
+			$mapper->mapAll("ref2")->to(RefTestModel::class)->by("another_test")
+		);
+	}
+}
+
+class RefTestModel
+{
+	private $pk1, $pk2;
+	private $one, $two;
+
+	function __get($p) {
+		return $this->$p;
+	}
+
+	function __set($p, $v) {
+		$this->$p = $v;
+	}
+	
+	static function mapAs($mapper) {
+		return new Map(
+			__CLASS__,
+			new Table("reftest"),
+			$mapper->mapField("pk1", "test_id"),
+			$mapper->mapField("pk2", "another_test_id"),
+			$mapper->mapRef("one")->to(TestModel::class)->by("test"),
+			$mapper->mapRef("two")->to(TestModel::class)->by("another_test")
 		);
 	}
 }

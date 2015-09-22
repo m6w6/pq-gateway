@@ -28,7 +28,7 @@ class Map implements MapInterface
 	/**
 	 * @var PropertyInterface[]
 	 */
-	private $properties;
+	private $properties = [];
 
 	/**
 	 * Create a new object map definition
@@ -39,9 +39,8 @@ class Map implements MapInterface
 	function __construct($class, Table $gateway, PropertyInterface ...$properties) {
 		$this->class = $class;
 		$this->gateway = $gateway;
-		$this->properties = $properties;
 		foreach ($properties as $property) {
-			$property->setContainer($this);
+			$this->addProperty($property);
 		}
 		$this->objects = new ObjectManager($this);
 	}

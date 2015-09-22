@@ -46,15 +46,16 @@ class All implements RefPropertyInterface
 	function write($object, Row $rowToUpdate) {
 		$property = $this->findRefProperty($object);
 		$map = $this->mapper->mapOf($this->refClass);
-		$refs = $this->extract($object);
-		foreach ($refs as $ref) {
-			$property->assign($ref, $object);
-		}
-		return function() use($map, $refs) {
+		if (($refs = $this->extract($object))) {
 			foreach ($refs as $ref) {
-				$map->unmap($ref);
+				$property->assign($ref, $object);
 			}
-		};
+			return function() use($map, $refs) {
+				foreach ($refs as $ref) {
+					$map->unmap($ref);
+				}
+			};
+		}
 	}
 
 	/**

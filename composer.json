@@ -20,6 +20,7 @@
 	},
 	"require-dev": {
 		"react/promise": "~2.2",
-		"amphp/amp": "^1.0-beta"
+		"amphp/amp": "^1.0",
+		"phpunit/phpunit": "~4.7"
 	}
 }
