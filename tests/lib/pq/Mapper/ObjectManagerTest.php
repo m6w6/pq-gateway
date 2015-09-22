@@ -4,7 +4,9 @@ namespace pq\Mapper;
 
 require_once __DIR__."/../../../setup.inc";
 
+use BadMethodCallException;
 use pq\Connection;
+use pq\Gateway\Row;
 use pq\Gateway\Table;
 use pq\Mapper\ObjectManager;
 use QueryLogger;
@@ -16,34 +18,56 @@ class ObjectManagerTest extends \PHPUnit_Framework_TestCase
 	 * @var Connection
 	 */
 	protected $conn;
+
+	/**
+	 * @var Mapper
+	 */
+	protected $mapper;
+
 	/**
 	 * @var ObjectManager
 	 */
 	protected $objectManager;
 
-	/**
-	 * Sets up the fixture, for example, opens a network connection.
-	 * This method is called before a test is executed.
-	 */
 	protected function setUp() {
 		$this->conn = new Connection(PQ_TEST_DSN);
 		$this->conn->exec(PQ_TEST_SETUP_SQL);
 		Table::$defaultConnection = $this->conn;
-		$mapper = new Mapper;
-		$mapping = TestModel::mapAs($mapper);
+		$this->mapper = new Mapper;
+		$mapping = TestModel::mapAs($this->mapper);
 		$mapping->getGateway()->getQueryExecutor()->attach(new QueryLogger());
-		$this->objectManager = new ObjectManager($mapping);
+		$this->objectManager = $mapping->getObjects();
+	}
+
+	protected function tearDown() {
+		$this->conn->exec(PQ_TEST_TEARDOWN_SQL);
+	}
+
+	function testBasic() {
+		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
+		$row_id = $this->objectManager->rowId($row);
+		$this->assertFalse($this->objectManager->hasObject($row_id));
+		$this->objectManager->createObject($row);
+		$this->assertTrue($this->objectManager->hasObject($row_id));
+	}
+
+	function testGetObject() {
+		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
+		$row_id = $this->objectManager->rowId($row);
+		$this->objectManager->createObject($row);
+		$this->assertTrue($this->objectManager->hasObject($row_id));
+		$this->assertInstanceof(TestModel::class, $this->objectManager->getObject($row));
 	}
 
 	/**
-	 * Tears down the fixture, for example, closes a network connection.
-	 * This method is called after a test is executed.
+	 * @expectedException BadMethodCallException
 	 */
-	protected function tearDown() {
-
+	function testGetObjectException() {
+		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
+		$this->objectManager->getObject($row);
 	}
 
-	public function testBasic() {
+	function testReset() {
 		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
 		$row_id = $this->objectManager->rowId($row);
 		$this->assertFalse($this->objectManager->hasObject($row_id));
@@ -52,170 +76,67 @@ class ObjectManagerTest extends \PHPUnit_Framework_TestCase
 		$this->objectManager->reset();
 		$this->assertFalse($this->objectManager->hasObject($row_id));
 	}
-	
-	/**
-	 * @covers pq\Mapper\ObjectManager::rowId
-	 * @todo   Implement testRowId().
-	 */
-	public function testRowId() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
+
+	function testResetObject() {
+		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
+		$row_id = $this->objectManager->rowId($row);
+		$this->assertFalse($this->objectManager->hasObject($row_id));
+		$this->objectManager->createObject($row);
+		$this->assertTrue($this->objectManager->hasObject($row_id));
+		$this->objectManager->resetObject($row);
+		$this->assertFalse($this->objectManager->hasObject($row_id));
+	}
+
+	function testFalseRowId() {
+		$this->assertFalse($this->objectManager->rowId(new Row($this->objectManager->getMap()->getGateway())));
+	}
+
+	function testExtractRowId() {
+		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
+		$row_id = $this->objectManager->rowId($row);
+		$object = $this->objectManager->getMap()->map($row);
+		$this->assertEquals($row_id, $this->objectManager->extractRowId($object));
+	}
+
+	function testSerializeRowIdScalar() {
+		$this->assertEquals(
+			$this->objectManager->serializeRowId(["id" => 1]),
+			$this->objectManager->serializeRowId($this->objectManager->serializeRowId(["id"=>1]))
 		);
 	}
 
-	/**
-	 * @covers pq\Mapper\ObjectManager::objectId
-	 * @todo   Implement testObjectId().
-	 */
-	public function testObjectId() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
+	function testSerializeRowIdNull() {
+		$this->assertEquals("null", $this->objectManager->serializeRowId(null));
+		$this->assertFalse($this->objectManager->serializeRowId(null, true));
+		$this->assertFalse($this->objectManager->serializeRowId(["id"=>null], true));
+	}
+
+	function testGetRow() {
+		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
+		$obj = $this->objectManager->getMap()->map($row);
+		$this->assertSame($row, $this->objectManager->getRow($obj));
+	}
+
+	function testAsRow() {
+		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
+		$obj = $this->objectManager->getMap()->map($row);
+		$this->assertSame($row, $this->objectManager->asRow($obj));
+	}
+
+	function testHasRow() {
+		$row = $this->objectManager->getMap()->getGateway()->find(["id="=>1])->current();
+		$obj = $this->objectManager->getMap()->map($row);
+		$this->assertSame($row, $this->objectManager->asRow($obj));
+		$this->assertTrue($this->objectManager->hasRow($this->objectManager->objectId($obj)));
+		$this->objectManager->resetRow($obj);
+		$this->assertFalse($this->objectManager->hasRow($this->objectManager->objectId($obj)));
+		$this->assertNotSame($row, $this->objectManager->asRow($obj));
 	}
 
 	/**
-	 * @covers pq\Mapper\ObjectManager::extractRowId
-	 * @todo   Implement testExtractRowId().
+	 * @expectedException \BadMethodCallException
 	 */
-	public function testExtractRowId() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
+	function testGetRowException() {
+		$this->objectManager->getRow(new \stdClass);
 	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::serializeRowId
-	 * @todo   Implement testSerializeRowId().
-	 */
-	public function testSerializeRowId() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::hasObject
-	 * @todo   Implement testHasObject().
-	 */
-	public function testHasObject() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::createObject
-	 * @todo   Implement testCreateObject().
-	 */
-	public function testCreateObject() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::resetObject
-	 * @todo   Implement testResetObject().
-	 */
-	public function testResetObject() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::getObject
-	 * @todo   Implement testGetObject().
-	 */
-	public function testGetObject() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::getObjectById
-	 * @todo   Implement testGetObjectById().
-	 */
-	public function testGetObjectById() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::asObject
-	 * @todo   Implement testAsObject().
-	 */
-	public function testAsObject() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::hasRow
-	 * @todo   Implement testHasRow().
-	 */
-	public function testHasRow() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::createRow
-	 * @todo   Implement testCreateRow().
-	 */
-	public function testCreateRow() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::resetRow
-	 * @todo   Implement testResetRow().
-	 */
-	public function testResetRow() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::getRow
-	 * @todo   Implement testGetRow().
-	 */
-	public function testGetRow() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
-	/**
-	 * @covers pq\Mapper\ObjectManager::asRow
-	 * @todo   Implement testAsRow().
-	 */
-	public function testAsRow() {
-		// Remove the following lines when you implement this test.
-		$this->markTestIncomplete(
-			'This test has not been implemented yet.'
-		);
-	}
-
 }
