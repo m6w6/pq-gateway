@@ -15,6 +15,12 @@ interface MapInterface
 	function getClass();
 
 	/**
+	 * Get the object manager
+	 * @return ObjectManager
+	 */
+	function getObjects();
+
+	/**
 	 * The the underlying table gateway
 	 * @return Table
 	 */

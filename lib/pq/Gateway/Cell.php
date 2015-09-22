@@ -50,8 +50,10 @@ class Cell extends Expressible implements \ArrayAccess
 		if ($data instanceof Cell) {
 			$data = $data->get();
 		}
-		parent::set($data);
-		$this->dirty = true;
+		if ($this->data !== $data) {
+			parent::set($data);
+			$this->dirty = true;
+		}
 		return $this;
 	}
 	

@@ -4,6 +4,7 @@ namespace pq\Mapper;
 
 use pq\Connection;
 use pq\Gateway\Table;
+use QueryLogger;
 use RefTestModel;
 use stdClass;
 use TestModel;
@@ -34,6 +35,7 @@ class MapperTest extends \PHPUnit_Framework_TestCase
 		Table::$defaultConnection = $this->conn;
 		$this->mapper = new Mapper;
 		$this->map = TestModel::mapAs($this->mapper);
+		$this->map->getGateway()->getQueryExecutor()->attach(new QueryLogger());
 	}
 
 	protected function tearDown() {

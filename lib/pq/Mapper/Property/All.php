@@ -44,13 +44,13 @@ class All implements RefPropertyInterface
 	 * @return callable deferred callback
 	 */
 	function write($object, Row $rowToUpdate) {
-		$property = $this->findRefProperty($object);
-		$map = $this->mapper->mapOf($this->refClass);
 		if (($refs = $this->extract($object))) {
+			$property = $this->findRefProperty($object);
 			foreach ($refs as $ref) {
 				$property->assign($ref, $object);
 			}
-			return function() use($map, $refs) {
+			return function() use($refs) {
+				$map = $this->mapper->mapOf($this->refClass);
 				foreach ($refs as $ref) {
 					$map->unmap($ref);
 				}

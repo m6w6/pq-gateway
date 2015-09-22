@@ -2,16 +2,16 @@
 
 namespace pq\Mapper;
 
+use PHPUnit_Framework_TestCase;
 use pq\Connection;
 use pq\Gateway\Table;
+use QueryLogger;
 use RefTestModel;
-use stdClass;
 use TestModel;
-use UnexpectedValueException;
 
 require_once __DIR__."/../../../setup.inc";
 
-class MapTest extends \PHPUnit_Framework_TestCase
+class MapTest extends PHPUnit_Framework_TestCase
 {
 	/**
 	 * @var Connection
@@ -33,7 +33,9 @@ class MapTest extends \PHPUnit_Framework_TestCase
 		$this->conn->exec(PQ_TEST_SETUP_SQL);
 		Table::$defaultConnection = $this->conn;
 		$this->mapper = new Mapper;
-		$this->map = TestModel::mapAs($this->mapper);
+		$this->map = $this->mapper->mapOf(TestModel::class);
+		$this->map->getGateway()->getQueryExecutor()->attach(new QueryLogger());
+		$this->mapper->mapOf(RefTestModel::class)->getGateway()->getQueryExecutor()->attach(new QueryLogger());
 	}
 
 	protected function tearDown() {
@@ -56,7 +58,7 @@ class MapTest extends \PHPUnit_Framework_TestCase
 	function testUnmapRef() {
 		$obj = new \TestModel;
 		$obj->ref1 = $obj->ref2 = [
-			new \RefTestModel
+			new RefTestModel
 		];
 		$this->map->unmap($obj);
 	}
