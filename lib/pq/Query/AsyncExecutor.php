@@ -103,7 +103,9 @@ class AsyncExecutor extends Executor
 		
 		$context = $init();
 		foreach (func_get_args() as $cb) {
-			$then($context, $cb);
+			if (is_callable($callback)) {
+				$then($context, $cb);
+			}
 		}
 		
 		return array($context, function($result) use ($context, $done) {
@@ -117,7 +119,7 @@ class AsyncExecutor extends Executor
 	 * @param callable $callback result callback
 	 * @return mixed context created by the init callback
 	 */
-	function execute(WriterInterface $query, callable $callback) {
+	function execute(WriterInterface $query, callable $callback = null) {
 		$this->result = null;
 		$this->query = $query;
 		$this->notify();

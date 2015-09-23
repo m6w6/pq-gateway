@@ -27,7 +27,7 @@ interface ExecutorInterface extends \SplSubject
 	 * @param callable $callback
 	 * @return mixed the result of the callback
 	 */
-	function execute(WriterInterface $query, callable $callback);
+	function execute(WriterInterface $query, callable $callback = null);
 	
 	/**
 	 * @return \pq\Query\WriterInterface

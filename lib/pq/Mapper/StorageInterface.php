@@ -5,6 +5,13 @@ namespace pq\Mapper;
 interface StorageInterface
 {
 	/**
+	 * Find by PK
+	 * @param mixed $pk
+	 * @return object
+	 */
+	function get($pk);
+	
+	/**
 	 * Find
 	 * @param array $where
 	 * @param string $order
@@ -25,4 +32,19 @@ interface StorageInterface
 	 * @param object $object
 	 */
 	function save($object);
+
+	/**
+	 * Buffer in a transaction
+	 */
+	function buffer();
+
+	/**
+	 * Commit
+	 */
+	function flush();
+
+	/**
+	 * Rollback
+	 */
+	function discard();
 }

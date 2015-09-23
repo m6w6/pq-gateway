@@ -68,4 +68,16 @@ class StorageTest extends PHPUnit_Framework_TestCase
 		$this->mapper->mapOf(TestModel::class)->getObjects()->resetRow($obj);
 		$this->assertCount(0, $this->storage->find(["id="=>$obj->id]));
 	}
+
+	function testBuffer() {
+		$this->storage->buffer();
+		$this->assertEquals("yesterday", $this->storage->get(1)->data);
+		$this->mapper->mapOf(TestModel::class)->getObjects()->reset();
+		$exec = $this->mapper->mapOf(TestModel::class)->getGateway()->getQueryExecutor();
+		$xact = executeInConcurrentTransaction($exec, "UPDATE test SET data=\$2 WHERE id=\$1", [1, "the day before"]);
+		$this->assertEquals("yesterday", $this->storage->get(1)->data);
+		$xact->commit();
+		$this->storage->discard();
+		$this->assertEquals("the day before", $this->storage->get(1)->data);
+	}
 }

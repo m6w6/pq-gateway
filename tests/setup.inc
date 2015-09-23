@@ -50,11 +50,13 @@ SQL;
 
 require_once __DIR__ . "/../vendor/autoload.php";
 
-function executeInConcurrentTransaction(ExecutorInterface $exec, $sql, array $params = null) {
+function executeInConcurrentTransaction(ExecutorInterface $exec, $sql, array $params = array()) {
 	$conn = $exec->getConnection();
-	$exec->setConnection(new Connection(PQ_TEST_DSN));
-	$exec->execute(new Writer($sql, $params), function(){});
+	$xact = (new Connection(PQ_TEST_DSN))->startTransaction();
+	$exec->setConnection($xact->connection);
+	$exec->execute(new Writer($sql, $params));
 	$exec->setConnection($conn);
+	return $xact;
 }
 
 class QueryLogger implements SplObserver
@@ -83,10 +85,12 @@ class QueryLogger implements SplObserver
 				date_create()->format("Y-m-d H:i:s"),
 				json_encode($result));
 		} elseif (($query = $executor->getQuery())) {
-			fprintf($this->fp, "[%s] Q %s %% %s\n", 
+			$executor->getConnection()->exec("SELECT pg_backend_pid()")->fetchCol($pid);
+			fprintf($this->fp, "[%s] Q %s %% %s @%d\n",
 				date_create()->format("Y-m-d H:i:s"),
 				preg_replace("/\s+/", " ", $query), 
-				json_encode($query->getParams()));
+				json_encode($query->getParams()),
+				$pid);
 		}
 	}
 }

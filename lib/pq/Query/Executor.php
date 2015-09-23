@@ -76,13 +76,13 @@ class Executor implements ExecutorInterface
 	 * @param callable $callback
 	 * @return mixed
 	 */
-	function execute(WriterInterface $query, callable $callback) {
+	function execute(WriterInterface $query, callable $callback = null) {
 		$this->result = null;
 		$this->query = $query;
 		$this->notify();
 		$this->result = $this->getConnection()->execParams($query, $query->getParams(), $query->getTypes());
 		$this->notify();
-		return $callback($this->result);
+		return $callback ? $callback($this->result) : $this->result;
 	}
 	
 	/**

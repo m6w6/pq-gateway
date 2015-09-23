@@ -70,7 +70,7 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 		executeInConcurrentTransaction(
 			$this->table->getQueryExecutor(),
 			"UPDATE {$this->table->getName()} SET data='bar' WHERE id=\$1", 
-			array($row->id->get()));
+			array($row->id->get()))->commit();
 		$this->setExpectedException("\\UnexpectedValueException", "Row has already been modified");
 		$row->update();
 		$txn->commit();
@@ -93,7 +93,7 @@ class RowTest extends \PHPUnit_Framework_TestCase {
 		executeInConcurrentTransaction(
 			$this->table->getQueryExecutor(), 
 			"UPDATE {$this->table->getName()} SET counter = 10 WHERE id=\$1", 
-			array($row->id->get()));
+			array($row->id->get()))->commit();
 		$this->setExpectedException("\\UnexpectedValueException", "No row updated");
 		$row->update();
 	}
