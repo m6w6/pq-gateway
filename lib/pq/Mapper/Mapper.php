@@ -73,7 +73,7 @@ class Mapper
 	 * @return Storage
 	 */
 	function createStorage($class) {
-		return new Storage($this->mapOf($class));
+		return new Storage($this, $class);
 	}
 
 	/**

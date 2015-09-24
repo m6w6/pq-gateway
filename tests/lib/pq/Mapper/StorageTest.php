@@ -80,4 +80,18 @@ class StorageTest extends PHPUnit_Framework_TestCase
 		$this->storage->discard();
 		$this->assertEquals("the day before", $this->storage->get(1)->data);
 	}
+
+	function testOf() {
+		$obj = $this->storage->get(1);
+		$ref = new Storage($this->mapper, RefTestModel::class);
+		$this->assertSame($obj->ref1, $ref->of($obj, "test"));
+		$this->assertSame($obj->ref2, $ref->of($obj, "another_test"));
+	}
+
+	function testBy() {
+		$ref = new Storage($this->mapper, RefTestModel::class);
+		$obj = $ref->get([2,2]);
+		$this->assertSame($obj->one, $this->storage->by($obj, "test"));
+		$this->assertSame($obj->two, $this->storage->by($obj, "another_test"));
+	}
 }

@@ -22,6 +22,22 @@ interface StorageInterface
 	function find($where = [], $order = null, $limit = null, $offset = null);
 
 	/**
+	 * Find parent
+	 * @param object $object
+	 * @param string $refName
+	 * @return object
+	 */
+	function by($object, $refName);
+	
+	/**
+	 * Find child rows
+	 * @param object $object
+	 * @param string $refName
+	 * @return array
+	 */
+	function of($object, $refName);
+	
+	/**
 	 * Delete
 	 * @param object $object
 	 */

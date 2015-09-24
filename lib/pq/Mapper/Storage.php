@@ -13,7 +13,13 @@ class Storage implements StorageInterface
 	 * The mapping of this storage
 	 * @var MapInterface
 	 */
-	var $map;
+	private $map;
+
+	/**
+	 * The mapper
+	 * @var Mapper
+	 */
+	private $mapper;
 
 	/**
 	 * The underlying table gateway
@@ -22,18 +28,14 @@ class Storage implements StorageInterface
 	private $gateway;
 
 	/**
-	 * Buffered transaction
-	 * @var Transaction
-	 */
-	private $xaction;
-
-	/**
 	 * Create a storage for $map
-	 * @param MapInterface $map
+	 * @param Mapper $mapper
+	 * @param string $class
 	 */
-	function __construct(MapInterface $map) {
-		$this->map = $map;
-		$this->gateway = $map->getGateway();
+	function __construct(Mapper $mapper, $class) {
+		$this->mapper = $mapper;
+		$this->map = $mapper->mapOf($class);
+		$this->gateway = $this->map->getGateway();
 	}
 
 	/**
@@ -44,18 +46,20 @@ class Storage implements StorageInterface
 	function get($pk) {
 		$id = $this->gateway->getIdentity();
 		if (count($id) == 1 && is_scalar($pk)) {
-			$pk = [current($id->getColumns()) => $pk];
-		} elseif (!is_array($pk) || count($pk) !== count($id)) {
+			$vals = [$pk];
+		} elseif (is_array($pk) && count($pk) === count($id)) {
+			$vals = $pk;
+		} else {
 			throw InvalidArgumentException(
 				"Insufficient identity provided; not all fields of %s are provided in %s",
 				json_encode($id->getColumns()), json_encode($pk));
 		}
 
-		$where = [];
-		foreach ($pk as $k => $v) {
-			$where["$k="] = $v;
-		}
-		$rowset = $this->gateway->find($where);
+		$keys = array_map(function($v) {
+			return "$v=";
+		}, $id->getColumns());
+
+		$rowset = $this->gateway->find(array_combine($keys, $vals));
 		
 		return $this->map->map($rowset->current());
 	}
@@ -72,6 +76,30 @@ class Storage implements StorageInterface
 		/* @var pq\Gateway\Rowset $rowset */
 		$rowset = $this->gateway->find($where, $order, $limit, $offset);
 		return $this->map->mapAll($rowset);
+	}
+
+	/**
+	 * Find parent
+	 * @param object $object
+	 * @param string $refName
+	 * @return object
+	 */
+	function by($object, $refName) {
+		$row = $this->mapper->mapOf($object)->getObjects()->getRow($object);
+		$this->map->refOf($row, $refName, $objects);
+		return current($objects);
+	}
+
+	/**
+	 * Find childs
+	 * @param object $object
+	 * @param string $refName
+	 * @return array
+	 */
+	function of($object, $refName) {
+		$row = $this->mapper->mapOf($object)->getObjects()->getRow($object);
+		$this->map->allOf($row, $refName, $objects);
+		return $objects;
 	}
 
 	/**
