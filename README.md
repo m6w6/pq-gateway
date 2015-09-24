@@ -1,19 +1,26 @@
 # pq-gateway
 
-A [gateway](http://martinfowler.com/eaaCatalog/tableDataGateway.html) implementation 
+A gateway and data mapper implementation 
 for [ext-pq](http://git.php.net/?p=pecl/database/pq.git;a=summary).
 
 ## Docs
 
-http://devel-m6w6.rhcloud.com/mdref/pq-gateway
+https://mdref.m6w6.name/pq-gateway
 
 ## News
+* ***2015-??-??:*** 2.2.0
 * ***2015-05-20:*** 2.1.0 tagged
 * ***2014-10-15:*** 2.0.0 tagged
 * ***2013-05-15:*** 1.1.0 tagged
 * ***2013-05-03:*** 1.0.0 tagged
 
 ## ChangeLog
+
+### 2.2.0
+* Added pq\Mapper
+* pq\Gateway\Cell is only considered dirty if updated data differs
+* pq\Query\ExecutorInterface::execute()'s 2nd parameter `callable $callback` is
+  now optional
 
 ### 2.1.0
 * Added pq\Query\AsyncExecutor::setCallbacks(callable $init, callable $done, callable $then)  
